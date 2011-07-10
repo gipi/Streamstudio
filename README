@@ -1,0 +1,22 @@
+GSTREAMER
+---------
+
+Launch a player with the image taken from the webcam
+
+ $ gst-launch v4l2src ! ffmpegcolorspace ! xvimagesink
+
+http://luisbg.blogalia.com/historias/61887
+http://www.jonobacon.org/2006/08/28/getting-started-with-gstreamer-with-python/
+
+Pipeline dumps
+● Dump pipelines as graphviz graphs
+● Use dot to render them
+● Run apps with:
+GST_DEBUG_DUMP_DOT_DIR=$PWD ./myapp
+
+Logging
+● Powerful logging subsystem
+● Level, categories, ...
+● Run apps with:
+GST_DEBUG="*:2,GST_CAPS:4" ./myapp
+
