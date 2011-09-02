@@ -219,8 +219,8 @@ class VideoInput(gtk.Window):
 	print "REC function not yet implemented"
 
     def remove(self):
-	self.destroy()
-	print "REMOVE function not yet implemented"
+	self.pause()	
+	self.main_vbox.destroy()
 
     def show(self):
 	self.show_all()
