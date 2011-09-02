@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 '''By Pierpa and Packs: We are trying to 
 build a studio for lots of video/audio 
-input who generate a virtual webcam as output '''
+input who generate a virtual webcam as output 
+
+More example in future.'''
 
 import pygtk
 pygtk.require('2.0')
