@@ -339,12 +339,15 @@ class StreamStudio(gtk.Window):
     def run(self):
         self.show()
 	#self._players = []
+	gtk.gdk.threads_enter()
         gtk.main()
+	gtk.gdk.threads_leave()
 
     def quit(self):
         gtk.main_quit()
 
 if __name__ == '__main__':
+    gtk.gdk.threads_init()
     a = StreamStudio()
     a.run()
 
