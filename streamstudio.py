@@ -38,10 +38,31 @@ ui_string = """<ui>
   </toolbar>
 </ui>"""
 
+# from switch.py, FIXME: rewrite with VideoInput
+class VideoWidget(gtk.DrawingArea):
+    def __init__(self):
+        gtk.DrawingArea.__init__(self)
+        self.imagesink = None
+        self.unset_flags(gtk.DOUBLE_BUFFERED)
+
+    def do_expose_event(self, event):
+        if self.imagesink:
+            self.imagesink.expose()
+            return False
+        else:
+            return True
+
+    def set_sink(self, sink):
+        assert self.window.xid
+        self.imagesink = sink
+        self.imagesink.set_xwindow_id(self.window.xid)
+
 
 
 class StreamStudio(gtk.Window):
     def __init__(self, title='StreamStudio'):
+        self.videowidget = VideoWidget()
+        self._initialize_main_pipeline()
         self.pipelines=[] #active pipelines 
         """
         viewers will be a dictionary with the pipelines as keys
@@ -73,6 +94,15 @@ class StreamStudio(gtk.Window):
         toolbar.realize()
         toolbar.show()
 
+        main_vbox.pack_start(self.videowidget)
+
+        #self.videowidget.connect_after(
+        #   'realize',
+        #   lambda *x: self.main_pipeline_play()
+        #)
+        self.videowidget.show()
+        self.main_pipeline_play()
+
         viewers_pane=gtk.HPaned()
         sources_vbox = gtk.VBox()
         output_vbox  = gtk.VBox()
@@ -88,6 +118,68 @@ class StreamStudio(gtk.Window):
         self.statusbar = status
 
         self._menu_cix = -1
+
+    def _initialize_main_pipeline(self):
+        """Here we have the creation and the starting of the pipeline
+        that will take all the source with an input-selector and send
+        them to the final sink.
+
+        Also connect the pipeline to some signal in order to update the
+        drawing area associated.
+        """
+        self.main_pipeline_str = (
+            'videotestsrc pattern=0 ! queue ! s.sink0'
+            ' input-selector name=s ! autovideosink'
+        )
+        #import pdb;pdb.set_trace()
+        self.main_pipeline =  gst.parse_launch(self.main_pipeline_str)
+        bus = self.main_pipeline.get_bus()
+        bus.enable_sync_message_emission()
+        bus.add_signal_watch()
+        bus.connect('sync-message::element', self.on_sync_message)
+        bus.connect('message', self.on_message)
+
+    def main_pipeline_play(self):
+        self.playing = True
+        gst.info("playing player")
+        self.main_pipeline.set_state(gst.STATE_PLAYING)
+
+    def main_pipeline_stop(self):
+        self.main_pipeline.set_state(gst.STATE_NULL)
+        gst.info("stopped player")
+        self.playing = False
+
+    def main_pipeline_get_state(self, timeout=1):
+        return self.main_pipeline.get_state(timeout=timeout)
+
+    def main_pipeline_is_playing(self):
+        return self.playing
+
+    def on_sync_message(self, bus, message):
+        #import pdb;pdb.set_trace()
+        if message.structure is None:
+            return
+        if message.structure.get_name() == 'prepare-xwindow-id':
+            # Sync with the X server before giving the X-id to the sink
+            gtk.gdk.threads_enter()
+            gtk.gdk.display_get_default().sync()
+            self.videowidget.set_sink(message.src)
+            message.src.set_property('force-aspect-ratio', True)
+            gtk.gdk.threads_leave()
+
+    def on_message(self, bus, message):
+        t = message.type
+        if t == gst.MESSAGE_ERROR:
+            err, debug = message.parse_error()
+            print "Error: %s" % err, debug
+            if self.on_eos:
+                self.on_eos()
+            self.playing = False
+        elif t == gst.MESSAGE_EOS:
+            if self.on_eos:
+                self.on_eos()
+            self.playing = False
+
 
     def _create_ui(self):
         ag = gtk.ActionGroup('AppActions')
@@ -112,6 +204,7 @@ class StreamStudio(gtk.Window):
         ui.insert_action_group(ag, 0)
         ui.add_ui_from_string(ui_string)
         self.add_accel_group(ui.get_accel_group())
+
         return ui
 
     def _on_uimanager__connect_proxy(self, uimgr, action, widget):
