@@ -13,51 +13,51 @@ import gst
 
 class VideoInput(gtk.Window):
     '''This class create a viewers with its own toolbar and its own gtk.Window
-	for a gstreamer video pipeline who could be imported in other windows 
-	using reparenting:
+    for a gstreamer video pipeline who could be imported in other windows 
+    using reparenting:
 
-	import inputs
-	(...)
-	viewer = inputs.VideoInput() 
-	viewer.set_pipeline(pipeline)
-	childWidget = viewer.main_vbox
-	childWidget.reparent(self.main_vbox)
-	childWidget.show_all()
+    import inputs
+    (...)
+    viewer = inputs.VideoInput() 
+    viewer.set_pipeline(pipeline)
+    childWidget = viewer.main_vbox
+    childWidget.reparent(self.main_vbox)
+    childWidget.show_all()
     '''	
 	
     def __init__(self):
-	self.status="PAUSE"
-	self.label=""
+        self.status="PAUSE"
+        self.label=""
         gtk.Window.__init__(self)
-    	self.set_title(self.get_label())
+        self.set_title(self.get_label())
         self.connect('delete-event', self._on_delete_event)
         self.set_position(gtk.WIN_POS_CENTER)
         self.set_size_request(200, 200)
-	self.ui_string = """
-		<ui>
-  		  <toolbar name='Toolbar'>
-    		    <toolitem action='Play'/>
-    		    <toolitem action='Pause'/>
-    		    <toolitem action='Rec'/>
-    		    <separator/>
-    		    <toolitem action='Remove'/>
-  		  </toolbar>
-		</ui>"""
-	uimgr = self._create_ui()
+        self.ui_string = """
+        <ui>
+            <toolbar name='Toolbar'>
+                <toolitem action='Play'/>
+                <toolitem action='Pause'/>
+                <toolitem action='Rec'/>
+                <separator/>
+                <toolitem action='Remove'/>
+            </toolbar>
+        </ui>"""
+        uimgr = self._create_ui()
         uimgr.connect('connect-proxy',
                       self._on_uimanager__connect_proxy)
         uimgr.connect('disconnect-proxy',
                       self._on_uimanager__disconnect_proxy)
         toolbar = uimgr.get_widget('/Toolbar')
         label = gtk.Label(self.get_label())
-	da = gtk.DrawingArea()
-	vbox=gtk.VBox()
-	vbox.pack_start(label,expand=False)
-	vbox.add(da)
-	vbox.pack_end(toolbar,expand=False)
-	self.main_vbox=vbox
-	self.da=da
-	self.add(vbox)
+        da = gtk.DrawingArea()
+        vbox=gtk.VBox()
+        vbox.pack_start(label,expand=False)
+        vbox.add(da)
+        vbox.pack_end(toolbar,expand=False)
+        self.main_vbox=vbox
+        self.da=da
+        self.add(vbox)
 
     def _on_uimanager__connect_proxy(self, uimgr, action, widget):
         tooltip = action.get_property('tooltip')
@@ -117,81 +117,81 @@ class VideoInput(gtk.Window):
         return ui
 
     def set_pipeline(self,pipeline):
-	self.pipeline=pipeline
-	self._pipeline()	
+        self.pipeline=pipeline
+        self._pipeline()	
 
     def get_pipeline(self):
-	return self.pipeline
+        return self.pipeline
 
     def set_label(self,label):
-	self.label=label	
+        self.label=label
 
     def get_label(self):
-	if not self.label:
-		self.set_label("New video input")
-	return self.label
+        if not self.label:
+            self.set_label("New video input")
+        return self.label
 
     def _pipeline(self):
-	"""
-	This method create a pipeline as described in "pipeline"
-	and redirect video output into the DrawingArea() passed
-	as second argument.
+        """
+        This method create a pipeline as described in "pipeline"
+        and redirect video output into the DrawingArea() passed
+        as second argument.
 
-	The callback are created at runtime using python closure.
-	"""
-	
-	def __cb_on_sync():
-		def on_sync_message(bus, message):
-			if message.structure is None:
-				return
-			message_name = message.structure.get_name()
-			#print '###', message_name
+        The callback are created at runtime using python closure.
+        """
 
-			"""
-			following this FAQ 
+        def __cb_on_sync():
+            def on_sync_message(bus, message):
+                if message.structure is None:
+                    return
+                message_name = message.structure.get_name()
+                #print '###', message_name
 
-			http://faq.pygtk.org/index.py?file=faq20.006.htp&req=show
-			
-			we have to wrap code touching widgets
-			with gtk.gdk.threads_enter() and gtk.gdk.threads_leave() otherwise
-			errors like 
+                """
+                following this FAQ 
 
-			python: ../../src/xcb_io.c:221: poll_for_event: asserzione "(((long) (event_sequence) - (long) (dpy->request)) <= 0)" non riuscita.
+                http://faq.pygtk.org/index.py?file=faq20.006.htp&req=show
 
-			will appear.
-			"""
-			gtk.gdk.threads_enter()
-			if message_name == "prepare-xwindow-id":
-				# Assign the viewport
-				imagesink = message.src
-				imagesink.set_property("force-aspect-ratio", True)
-				imagesink.set_xwindow_id(self.da.window.xid)
+                we have to wrap code touching widgets
+                with gtk.gdk.threads_enter() and gtk.gdk.threads_leave() otherwise
+                errors like 
 
-			gtk.gdk.threads_leave()
+                python: ../../src/xcb_io.c:221: poll_for_event: asserzione "(((long) (event_sequence) - (long) (dpy->request)) <= 0)" non riuscita.
 
-		return on_sync_message
+                will appear.
+                """
+                gtk.gdk.threads_enter()
+                if message_name == "prepare-xwindow-id":
+                    # Assign the viewport
+                    imagesink = message.src
+                    imagesink.set_property("force-aspect-ratio", True)
+                    imagesink.set_xwindow_id(self.da.window.xid)
 
-	def __cb_factory(p):
-		def _cb(bus, message):
-			t = message.type
-			if t == gst.MESSAGE_EOS:
-				p.set_state(gst.STATE_NULL)
-				self.status="PLAY"
-			elif t == gst.MESSAGE_ERROR:
-				err, debug = message.parse_error()
-				print "Error: %s" % err, debug
-				p.set_state(gst.STATE_NULL)
-				self.status="PLAY"
-		return _cb
+                gtk.gdk.threads_leave()
 
-	player = gst.parse_launch(self.get_pipeline())
-	bus = player.get_bus()
-	bus.add_signal_watch()
-	bus.enable_sync_message_emission()
-	bus.connect("message", __cb_factory(player))
-	bus.connect("sync-message::element", __cb_on_sync())
-	
-	self.player=player
+            return on_sync_message
+
+        def __cb_factory(p):
+            def _cb(bus, message):
+                t = message.type
+                if t == gst.MESSAGE_EOS:
+                    p.set_state(gst.STATE_NULL)
+                    self.status="PLAY"
+                elif t == gst.MESSAGE_ERROR:
+                    err, debug = message.parse_error()
+                    print "Error: %s" % err, debug
+                    p.set_state(gst.STATE_NULL)
+                    self.status="PLAY"
+            return _cb
+
+        player = gst.parse_launch(self.get_pipeline())
+        bus = player.get_bus()
+        bus.add_signal_watch()
+        bus.enable_sync_message_emission()
+        bus.connect("message", __cb_factory(player))
+        bus.connect("sync-message::element", __cb_on_sync())
+
+        self.player=player
 
     def _on_action_play(self, action):
         self.play()
@@ -219,8 +219,9 @@ class VideoInput(gtk.Window):
 	print "REC function not yet implemented"
 
     def remove(self):
-	self.pause()	
-	self.main_vbox.destroy()
+        self.pause()	
+        self.main_vbox.destroy()
+
 
     def show(self):
 	self.show_all()
