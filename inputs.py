@@ -2,7 +2,7 @@
 add a viewer for a video input in the main 
 program window
 '''
-
+import gobject
 import pygtk
 pygtk.require('2.0')
 import gtk
@@ -23,8 +23,19 @@ class VideoInput(gtk.Window):
     childWidget = viewer.main_vbox
     childWidget.reparent(self.main_vbox)
     childWidget.show_all()
+
+    This is intended to be used as a simple view (think to the MVC paradigm) and made
+    available some signals
     '''	
-	
+    # http://www.pygtk.org/articles/subclassing-gobject/sub-classing-gobject-in-python.htm#d0e570
+    __gsignals__ = {
+        'removed': (
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
+            (gobject.TYPE_FLOAT,)
+        )
+    }
+
     def __init__(self):
         self.status="PAUSE"
         self.label=""
@@ -221,6 +232,7 @@ class VideoInput(gtk.Window):
     def remove(self):
         self.pause()	
         self.main_vbox.destroy()
+        self.emit('removed', 100)
 
 
     def show(self):

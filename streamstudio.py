@@ -43,6 +43,10 @@ ui_string = """<ui>
 class StreamStudio(gtk.Window):
     def __init__(self, title='StreamStudio'):
         self.pipelines=[] #active pipelines 
+        """
+        viewers will be a dictionary with the pipelines as keys
+        """
+        self.viewers = {} # active viewers (in italiano diremmo spie)
         gtk.Window.__init__(self)
         self.connect('delete-event', self._on_delete_event)
         self.set_position(gtk.WIN_POS_CENTER)
@@ -181,6 +185,7 @@ class StreamStudio(gtk.Window):
             self._add_viewer(pipeline)
         else:
             self._alert_message("(%s) pipeline already present" % pipeline)
+    
     def _on_device_selection(self, filename):
         """
         When the selection is successfully then get the filename
@@ -199,8 +204,20 @@ class StreamStudio(gtk.Window):
         childWidget = viewer.main_vbox
         childWidget.reparent(self.sources_vbox)
         childWidget.show_all()
+
+        # since we are ready to append, save the position
+        # for the "remove" callback
+        def _cb_created(obj, data, d=pipeline):
+            print '#UAU viewer removed', pipeline
+            self.pipelines.remove(pipeline)
+            self.viewers.pop(pipeline)
+
+        self.viewers[pipeline] = viewer
+
+        viewer.connect('removed', _cb_created)
+
     # Override in subclass
-	
+    
     def new(self):
         """Open a dialog to choose the proper video device
            then pass chosed file to self._on_device_selection
