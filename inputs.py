@@ -33,6 +33,11 @@ class VideoInput(gtk.Window):
             gobject.SIGNAL_RUN_LAST,
             gobject.TYPE_NONE,
             (gobject.TYPE_FLOAT,)
+        ),
+        'monitor-activated': (
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
+            (gobject.TYPE_FLOAT,)
         )
     }
 
@@ -50,6 +55,7 @@ class VideoInput(gtk.Window):
                 <toolitem action='Play'/>
                 <toolitem action='Pause'/>
                 <toolitem action='Rec'/>
+                <toolitem action='Active'/>
                 <separator/>
                 <toolitem action='Remove'/>
             </toolbar>
@@ -118,7 +124,9 @@ class VideoInput(gtk.Window):
             ('Rec',     gtk.STOCK_MEDIA_RECORD, '_Rec', '',
              'Record this video input', self._on_action_rec),
             ('Remove',     gtk.STOCK_QUIT, '_Remove', '',
-             'Remove this video input', self._on_action_remove)
+             'Remove this video input', self._on_action_remove),
+            ('Active',     gtk.STOCK_OK, '_Active', '',
+             'Remove this video input', self._on_action_active),
             ]
         ag.add_actions(actions)
         ui = gtk.UIManager()
@@ -215,6 +223,13 @@ class VideoInput(gtk.Window):
 
     def _on_action_remove(self, action):
         self.remove()
+
+    def _on_action_active(self, action):
+        """This action sends the signal that asks
+        to who is listening that this monitor wants
+        to be activated.
+        """
+        self.emit('monitor-activated', 100)
 
     def play(self):
 	self.status="PLAY"
