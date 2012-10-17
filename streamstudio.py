@@ -327,9 +327,13 @@ class StreamStudio(gtk.Window):
             self.pipelines.remove(pipeline)
             self.viewers.pop(pipeline)
 
+        def _cb_activated(obj, *args, **kwargs):
+            print ' # a monitor has been activated', obj
+            self.main_pipeline_switch("sink1")
         self.viewers[pipeline] = viewer
 
         viewer.connect('removed', _cb_created)
+        viewer.connect('monitor-activated', _cb_activated)
 
     # Override in subclass
     
