@@ -129,6 +129,7 @@ class StreamStudio(gtk.Window):
         """
         self.main_pipeline_str = (
             'videotestsrc pattern=0 ! queue ! s.sink0'
+            ' v4l2src device=/dev/video0 ! queue ! s.sink1'
             ' input-selector name=s ! autovideosink'
         )
         #import pdb;pdb.set_trace()
@@ -138,6 +139,10 @@ class StreamStudio(gtk.Window):
         bus.add_signal_watch()
         bus.connect('sync-message::element', self.on_sync_message)
         bus.connect('message', self.on_message)
+
+        self.input_selector = self.main_pipeline.get_by_name('s')
+
+        self.main_pipeline_switch('sink0')
 
     def main_pipeline_play(self):
         self.playing = True
@@ -154,6 +159,23 @@ class StreamStudio(gtk.Window):
 
     def main_pipeline_is_playing(self):
         return self.playing
+
+    def main_pipeline_switch(self, padname):
+        print 'switch to', padname
+        switch = self.main_pipeline.get_by_name('s')
+        stop_time = switch.emit('block')
+        newpad = switch.get_static_pad(padname)
+        start_time = newpad.get_property('running-time')
+
+        gst.warning('stop time = %d' % (stop_time,))
+        gst.warning('stop time = %s' % (gst.TIME_ARGS(stop_time),))
+
+        gst.warning('start time = %d' % (start_time,))
+        gst.warning('start time = %s' % (gst.TIME_ARGS(start_time),))
+
+        gst.warning('switching from %r to %r'
+                    % (switch.get_property('active-pad'), padname))
+        switch.emit('switch', newpad, stop_time, start_time)
 
     def on_sync_message(self, bus, message):
         #import pdb;pdb.set_trace()
