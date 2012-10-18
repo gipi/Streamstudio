@@ -35,7 +35,7 @@ class Pipeline(gobject.GObject):
         self.main_monitor_window = monitor_windows[0]
         self.monitor_windows = monitor_windows[1:]
 
-        self.pipeline_string = self._build_pipeline_string()
+        self._setup_pipeline()
 
     def _build_pipeline_string(self):
         """The final pipeline is in the form like
@@ -66,6 +66,9 @@ class Pipeline(gobject.GObject):
         return " ".join(pipes)
 
     def _setup_pipeline(self):
+        """Launch the pipeline and connect bus to the right signals"""
+        self.pipeline_string = self._build_pipeline_string()
+        logger.debug(self.pipeline_string)
         self.player = gst.parse_launch(self.pipeline_string)
         bus = self.player.get_bus()
         bus.enable_sync_message_emission()
