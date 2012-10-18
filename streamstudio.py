@@ -12,6 +12,7 @@ import pygst
 pygst.require("0.10")
 import gst
 import inputs
+import pipeline
 import sys
 
 
@@ -110,8 +111,14 @@ class StreamStudio(gtk.Window):
 
         self._menu_cix = -1
 
+        self.videowidget = inputs.VideoInput()
+        childWidget = self.videowidget.main_vbox
+        childWidget.reparent(self.sources_vbox)
 
+        self.monitors = [self._add_viewer_to_gui() for x in range(len(videodevicepaths))]
+        self.monitors.insert(0, self.videowidget)
 
+        self.pipeline = pipeline.Pipeline(videodevicepaths, self.monitors)
 
     def _create_ui(self):
         ag = gtk.ActionGroup('AppActions')
@@ -207,7 +214,7 @@ class StreamStudio(gtk.Window):
         """
         pipeline="v4l2src device=%s ! autovideosink" % filename	
         self._control_pipeline(pipeline)
-    
+
     def _alert_message(self, message):
         self.statusbar.push(self._menu_cix,message)
         print message
@@ -252,28 +259,25 @@ class StreamStudio(gtk.Window):
         print 'set state video_source', video_source.set_state(gst.STATE_PLAYING)
         print list(self.input_selector.pads())
 
-    def _add_viewer(self,pipeline):
+    def _add_viewer_to_gui(self):
         viewer = inputs.VideoInput() 
-        viewer.set_pipeline(pipeline)
         childWidget = viewer.main_vbox
         childWidget.reparent(self.sources_vbox)
         childWidget.show_all()
 
         # since we are ready to append, save the position
         # for the "remove" callback
-        def _cb_created(obj, data, d=pipeline):
-            print '#UAU viewer removed', pipeline
-            self.pipelines.remove(pipeline)
-            self.viewers.pop(pipeline)
+        def _cb_created(obj, *args, **kwargs):
+            print '#UAU viewer removed', obj
 
         def _cb_activated(obj, *args, **kwargs):
             print ' # a monitor has been activated', obj
-            self._add_source_to_pipeline("/dev/video0")
-            self.main_pipeline_switch("sink1")
-        self.viewers[pipeline] = viewer
+            self.pipeline.switch_to(obj)
 
         viewer.connect('removed', _cb_created)
         viewer.connect('monitor-activated', _cb_activated)
+
+        return viewer
 
     # Override in subclass
     
@@ -414,7 +418,9 @@ class StreamStudio(gtk.Window):
         dialog.destroy()
 
     def run(self):
-        self.show()
+        self.show_all()
+
+        self.pipeline.play()
         #self._players = []
         gtk.gdk.threads_enter()
         gtk.main()
@@ -434,3 +440,4 @@ if __name__ == '__main__':
 
     gtk.gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
+    a.run()
