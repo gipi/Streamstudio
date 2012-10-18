@@ -1,7 +1,3 @@
-'''By Pierpa and Packs: This class
-add a viewer for a video input in the main 
-program window
-'''
 import gobject
 import pygtk
 pygtk.require('2.0')

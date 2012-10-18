@@ -7,6 +7,8 @@ Launch a player with the image taken from the webcam
 
 http://luisbg.blogalia.com/historias/61887
 http://www.jonobacon.org/2006/08/28/getting-started-with-gstreamer-with-python/
+http://pygstdocs.berlios.de/
+http://gstreamer.freedesktop.org/data/doc/gstreamer/head/manual/html/section-dynamic-pipelines.html
 
 Pipeline dumps
 ● Dump pipelines as graphviz graphs
@@ -20,3 +22,15 @@ Logging
 ● Run apps with:
 GST_DEBUG="*:2,GST_CAPS:4" ./myapp
 
+V4L2Loopback
+------------
+
+In order to test is possible to use v4l2loopback that creates
+for you some fake video devices to full with stream of your choice.
+
+The project is hosted at
+
+  https://github.com/umlaeute/v4l2loopback/wiki
+
+
+ # apt-get install v4l2loopback-dkms v4l2loopback-utils
