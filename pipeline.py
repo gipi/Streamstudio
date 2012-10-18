@@ -83,10 +83,13 @@ class Pipeline(gobject.GObject):
 
     def _get_monitor_from_imagesink(self, imagesink):
         """Return the gtk.gdk.Window instance associated with given imagesink"""
-        # just for now return the index
         import re
         index_search = re.search("autovideosink(\d+)-actual-sink-xvimage", imagesink)
-        return self.monitor_windows[int(index_search.group(1)[0])]
+        position = int(index_search.group(1)[0])
+        if position < len(self.monitor_windows):
+            return self.monitor_windows[position]
+        else:
+            return self.main_monitor_window
 
     def __cb_on_sync(self):
         """When an "on sync" message is emitted check if is
