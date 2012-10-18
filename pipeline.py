@@ -116,15 +116,15 @@ class Pipeline(gobject.GObject):
 
             will appear.
             """
-            gtk.gdk.threads_enter()
-            if message_name == "prepare-xwindow-id":
-                # Assign the viewport
-                imagesink = message.src
-                window = self._get_monitor_from_imagesink(imagesink.get_name())
-                imagesink.set_property("force-aspect-ratio", True)
-                imagesink.set_xwindow_id(window.xid)
-
-            gtk.gdk.threads_leave()
+            try:
+                gtk.gdk.threads_enter()
+                if message_name == "prepare-xwindow-id":
+                    # Assign the viewport
+                    imagesink = message.src
+                    window = self._get_monitor_from_imagesink(imagesink.get_name())
+                    window.set_sink(imagesink)
+            finally:# this finally is helpful for avoid blocking crash
+                gtk.gdk.threads_leave()
 
         return on_sync_message
 
