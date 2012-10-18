@@ -145,3 +145,22 @@ class Pipeline(gobject.GObject):
 
     def play(self):
         self.player.set_state(gst.STATE_PLAYING)
+
+    def switch_to(self, monitor):
+        source_n = self.monitor_windows.index(monitor)
+        padname = 'sink%d' % source_n
+        logger.debug('switch to', padname)
+        switch = self.player.get_by_name('s')
+        stop_time = switch.emit('block')
+        newpad = switch.get_static_pad(padname)
+        start_time = newpad.get_property('running-time')
+
+        gst.warning('stop time = %d' % (stop_time,))
+        gst.warning('stop time = %s' % (gst.TIME_ARGS(stop_time),))
+
+        gst.warning('start time = %d' % (start_time,))
+        gst.warning('start time = %s' % (gst.TIME_ARGS(start_time),))
+
+        gst.warning('switching from %r to %r'
+                    % (switch.get_property('active-pad'), padname))
+        switch.emit('switch', newpad, stop_time, start_time)
