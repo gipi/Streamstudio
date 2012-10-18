@@ -79,8 +79,6 @@ class Pipeline(gobject.GObject):
 
         self.input_selector = self.player.get_by_name('s')
 
-        self.main_pipeline_switch('sink0')
-
     def _get_monitor_from_imagesink(self, imagesink):
         """Return the gtk.gdk.Window instance associated with given imagesink"""
         import re
