@@ -12,6 +12,7 @@ import pygst
 pygst.require("0.10")
 import gst
 import inputs
+import sys
 
 
 ui_string = """<ui>
@@ -524,7 +525,15 @@ class StreamStudio(gtk.Window):
     def quit(self):
         gtk.main_quit()
 
+def usage(progname):
+    print """usage: %s [video1 video2 ...]
+    """ % progname
+
 if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        usage(sys.argv[0])
+        sys.exit(1)
+
     gtk.gdk.threads_init()
     a = StreamStudio()
     a.run()
