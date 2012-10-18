@@ -40,10 +40,10 @@ class Pipeline(gobject.GObject):
     def _build_pipeline_string(self):
         """The final pipeline is in the form like
 
-        v4l2src device=/dev/videoX ! queue ! tee name=t0 ! s.sink0 t0. ! autovideosink
-        v4l2src device=/dev/videoX ! queue ! tee name=t1 ! s.sink1 t1. ! autovideosink
+        v4l2src device=/dev/videoX ! queue ! tee name=t0 ! queue ! s.sink0 t0. ! queue ! autovideosink
+        v4l2src device=/dev/videoX ! queue ! tee name=t1 ! queue ! s.sink1 t1. ! queue ! autovideosink
         ...
-        input-selector name=s ! autovideosink
+        input-selector name=s ! queue ! autovideosink
 
         where each video device has a tee that sends the stream to an autovideosink (that
         will be the monitor) and to an input-selector
@@ -52,12 +52,16 @@ class Pipeline(gobject.GObject):
         pipes = []
         for devicepath in self.videodevicepaths:
             pipes.append(
-                "v4l2src device=%s ! queue ! tee name=t%d ! s.sink%d ! autovideosink",
-                devicepath, count, count
+                "v4l2src device=%s ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! autovideosink" % (
+                    devicepath,
+                    count,
+                    count,
+                    count
+                )
             )
             count += 1
 
-        pipes.append("input-selector name=s ! autovideosink")
+        pipes.append("input-selector name=s ! queue ! autovideosink")
 
         return " ".join(pipes)
 
