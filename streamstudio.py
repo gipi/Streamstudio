@@ -61,7 +61,8 @@ class VideoWidget(gtk.DrawingArea):
 
 
 class StreamStudio(gtk.Window):
-    def __init__(self, title='StreamStudio'):
+    def __init__(self, title='StreamStudio', *args):
+        assert len(args) > 0
         self.videowidget = VideoWidget()
         self._initialize_main_pipeline()
         self.pipelines=[] #active pipelines 
@@ -535,6 +536,4 @@ if __name__ == '__main__':
         sys.exit(1)
 
     gtk.gdk.threads_init()
-    a = StreamStudio()
-    a.run()
-
+    a = StreamStudio(sys.argv[1:])
