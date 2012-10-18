@@ -61,8 +61,8 @@ class VideoWidget(gtk.DrawingArea):
 
 
 class StreamStudio(gtk.Window):
-    def __init__(self, title='StreamStudio', *args):
-        assert len(args) > 0
+    def __init__(self, videodevicepaths, title='StreamStudio'):
+        assert len(videodevicepaths) > 0
         self.videowidget = VideoWidget()
         self._initialize_main_pipeline()
         self.pipelines=[] #active pipelines 
