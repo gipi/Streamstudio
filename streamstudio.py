@@ -313,6 +313,46 @@ class StreamStudio(gtk.Window):
         self.statusbar.push(self._menu_cix,message)
         print message
 
+    def _add_source_to_pipeline(self, devicepath):
+        """This method adds to the main_pipeline that is running
+        a new source to the input-selector pad
+
+        v4l2src device=/dev/videoX ! queue ! s.sinkX
+        """
+        self.main_pipeline.set_state(gst.STATE_PAUSED)
+        if False:
+            video_source = gst.element_factory_make("videotestsrc", "pippo")
+            video_source.set_property("pattern", "snow")
+        else:
+            video_source = gst.element_factory_make("v4l2src", "pippo")
+            video_source.set_property("device", devicepath)
+
+        queue = gst.element_factory_make("queue")
+
+        self.main_pipeline.add(video_source)
+        self.main_pipeline.add(queue)
+
+        def OnDynamicPad(self, dbin, pad, islast):
+            """Since the input-selector creates its own sink at runtime
+            we have to connect to the "new-decoded-pad" signal this callback
+            """
+            print "OnDynamicPad Called!", dbin, pad, islast
+            pad.link(self.input_selector.get_pad("sink"))
+
+        assert video_source.link(queue)
+        #assert queue.link_pads('src', self.input_selector, 'sink1')
+        #assert video_source.link(queue)
+        assert queue.link(self.input_selector)
+        #sink1 = self.input_selector.get_pad('sink1')
+        #queuesrc = queue.get_pad("src")
+
+        #queue.connect("new-decoded-pad", OnDynamicPad)
+
+        #queue.set_state(gst.STATE_PLAYING)
+        print 'set state main_pipeline', self.main_pipeline.set_state(gst.STATE_PLAYING)
+        print 'set state video_source', video_source.set_state(gst.STATE_PLAYING)
+        print list(self.input_selector.pads())
+
     def _add_viewer(self,pipeline):
         viewer = inputs.VideoInput() 
         viewer.set_pipeline(pipeline)
@@ -329,6 +369,7 @@ class StreamStudio(gtk.Window):
 
         def _cb_activated(obj, *args, **kwargs):
             print ' # a monitor has been activated', obj
+            self._add_source_to_pipeline("/dev/video0")
             self.main_pipeline_switch("sink1")
         self.viewers[pipeline] = viewer
 
