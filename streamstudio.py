@@ -117,10 +117,45 @@ class StreamStudio(gtk.Window):
         childWidget.reparent(self.sources_vbox)
 
         self.monitors = [self._add_viewer_to_gui() for x in range(len(videodevicepaths))]
-        self.monitors.insert(0, self.videowidget)
 
-        self.pipeline = pipeline.Pipeline(videodevicepaths, self.monitors)
+        self.pipeline = pipeline.Pipeline(videodevicepaths)
+        self.pipeline.connect('set-sink', self.set_sink_for)
 
+    def _get_monitor_from_imagesink(self, imagesink):
+        """Return the gtk.gdk.Window instance associated with given imagesink"""
+        import re
+        index_search = re.search("autovideosink(\d+)-actual-sink-xvimage", imagesink)
+        position = int(index_search.group(1)[0])
+        if position < len(self.monitors):
+            return self.monitors[position]
+        else:
+            return self.videowidget
+
+    def _add_viewer_to_gui(self):
+        viewer = inputs.VideoInput() 
+        childWidget = viewer.main_vbox
+        childWidget.reparent(self.sources_vbox)
+        childWidget.show_all()
+
+        # since we are ready to append, save the position
+        # for the "remove" callback
+        def _cb_created(obj, *args, **kwargs):
+            print '#UAU viewer removed', obj
+
+        def _cb_activated(obj, *args, **kwargs):
+            print ' # a monitor has been activated', obj
+            self.pipeline.switch_to(self.monitors.index(obj))
+
+        viewer.connect('removed', _cb_created)
+        viewer.connect('monitor-activated', _cb_activated)
+
+        return viewer
+
+    def set_sink_for(self, obj, sink):
+        """sink is an imagesink instance"""
+        logger.debug("%s:%s" % (obj, sink))
+        monitor = self._get_monitor_from_imagesink(sink.get_name())
+        monitor.set_sink(sink)
     def _create_ui(self):
         ag = gtk.ActionGroup('AppActions')
         actions = [
@@ -259,26 +294,6 @@ class StreamStudio(gtk.Window):
         print 'set state main_pipeline', self.main_pipeline.set_state(gst.STATE_PLAYING)
         print 'set state video_source', video_source.set_state(gst.STATE_PLAYING)
         print list(self.input_selector.pads())
-
-    def _add_viewer_to_gui(self):
-        viewer = inputs.VideoInput() 
-        childWidget = viewer.main_vbox
-        childWidget.reparent(self.sources_vbox)
-        childWidget.show_all()
-
-        # since we are ready to append, save the position
-        # for the "remove" callback
-        def _cb_created(obj, *args, **kwargs):
-            print '#UAU viewer removed', obj
-
-        def _cb_activated(obj, *args, **kwargs):
-            print ' # a monitor has been activated', obj
-            self.pipeline.switch_to(obj)
-
-        viewer.connect('removed', _cb_created)
-        viewer.connect('monitor-activated', _cb_activated)
-
-        return viewer
 
     # Override in subclass
     
@@ -423,9 +438,7 @@ class StreamStudio(gtk.Window):
 
         self.pipeline.play()
         #self._players = []
-        gtk.gdk.threads_enter()
         gtk.main()
-        gtk.gdk.threads_leave()
 
     def quit(self):
         gtk.main_quit()
@@ -439,6 +452,5 @@ if __name__ == '__main__':
         usage(sys.argv[0])
         sys.exit(1)
 
-    gtk.gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.run()

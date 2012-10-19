@@ -1,8 +1,8 @@
 import gobject
 import gtk
 import gst
-
 from sslog import logger
+
 
 class Pipeline(gobject.GObject):
     """Main class for multimedia handling.
@@ -13,21 +13,22 @@ class Pipeline(gobject.GObject):
             gobject.TYPE_NONE,
             (gobject.TYPE_FLOAT,)
         ),
+        # TODO: set-sink -> sink-request
+        'set-sink': (
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
+            (gobject.TYPE_OBJECT,)
+        )
     }
-    def __init__(self, videodevicepaths, monitor_windows):
+    def __init__(self, videodevicepaths):
         """Initialize the Pipeline with the given device paths
         and with the windows to which will be played.
 
         the first monitor_windows will be the main monitor.
         """
-        # some sanity checks
-        assert len(videodevicepaths) + 1 == len(monitor_windows)
-
         gobject.GObject.__init__(self)
 
         self.videodevicepaths = videodevicepaths
-        self.main_monitor_window = monitor_windows[0]
-        self.monitor_windows = monitor_windows[1:]
 
         self._setup_pipeline()
 
@@ -73,15 +74,6 @@ class Pipeline(gobject.GObject):
 
         self.input_selector = self.player.get_by_name('s')
 
-    def _get_monitor_from_imagesink(self, imagesink):
-        """Return the gtk.gdk.Window instance associated with given imagesink"""
-        import re
-        index_search = re.search("autovideosink(\d+)-actual-sink-xvimage", imagesink)
-        position = int(index_search.group(1)[0])
-        if position < len(self.monitor_windows):
-            return self.monitor_windows[position]
-        else:
-            return self.main_monitor_window
 
     def __cb_on_sync(self):
         """When an "on sync" message is emitted check if is
@@ -95,28 +87,9 @@ class Pipeline(gobject.GObject):
             if message.structure is None:
                 return
             message_name = message.structure.get_name()
-            #print '###', message_name
-
-            """
-            following this FAQ 
-
-            http://faq.pygtk.org/index.py?file=faq20.006.htp&req=show
-
-            we have to wrap code touching widgets
-            with gtk.gdk.threads_enter() and gtk.gdk.threads_leave() otherwise
-            errors like 
-
-            python: ../../src/xcb_io.c:221: poll_for_event: asserzione "(((long) (event_sequence) - (long) (dpy->request)) <= 0)" non riuscita.
-
-            will appear.
-            """
-            try:
-                if message_name == "prepare-xwindow-id":
-                    # Assign the viewport
-                    imagesink = message.src
-                    window = self._get_monitor_from_imagesink(imagesink.get_name())
-                    window.set_sink(imagesink)
-            finally:# this finally is helpful for avoid blocking crash
+            if message_name == "prepare-xwindow-id":
+                imagesink = message.src
+                self.emit("set-sink", imagesink)
 
         return on_sync_message
 
@@ -136,8 +109,8 @@ class Pipeline(gobject.GObject):
     def play(self):
         self.player.set_state(gst.STATE_PLAYING)
 
-    def switch_to(self, monitor):
-        source_n = self.monitor_windows.index(monitor)
+    def switch_to(self, monitor_idx):
+        source_n = monitor_idx
         padname = 'sink%d' % source_n
         logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
