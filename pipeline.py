@@ -107,6 +107,8 @@ class Pipeline(gobject.GObject):
         return _cb
 
     def play(self):
+        gobject.threads_init()
+        gtk.gdk.threads_init()
         self.player.set_state(gst.STATE_PLAYING)
 
     def switch_to(self, monitor_idx):
