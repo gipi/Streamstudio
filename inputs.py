@@ -33,7 +33,7 @@ class VideoInput(gtk.Window):
         'monitor-activated': (
             gobject.SIGNAL_RUN_LAST,
             gobject.TYPE_NONE,
-            (gobject.TYPE_FLOAT,)
+            ()
         )
     }
 
@@ -166,7 +166,7 @@ class VideoInput(gtk.Window):
         to who is listening that this monitor wants
         to be activated.
         """
-        self.emit('monitor-activated', 100)
+        self.emit('monitor-activated')
 
     def play(self):
         raise NotImplementedError
