@@ -146,9 +146,11 @@ class VideoInput(gtk.Window):
         self.imagesink = sink
         # without this the switch works pretty bad
         #  http://developer.gnome.org/pygtk/stable/class-gdkdisplay.html#method-gdkdisplay--sync
+        gtk.gdk.threads_enter()
         gtk.gdk.display_get_default().sync()
         self.imagesink.set_property("force-aspect-ratio", True)
         self.imagesink.set_xwindow_id(xid)
+        gtk.gdk.threads_leave()
 
     def _on_action_play(self, action):
         self.play()
