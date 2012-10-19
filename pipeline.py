@@ -147,7 +147,7 @@ class Pipeline(gobject.GObject):
     def switch_to(self, monitor):
         source_n = self.monitor_windows.index(monitor)
         padname = 'sink%d' % source_n
-        logger.debug('switch to', padname)
+        logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
         stop_time = switch.emit('block')
         newpad = switch.get_static_pad(padname)
