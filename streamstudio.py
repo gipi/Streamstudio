@@ -14,6 +14,7 @@ import gst
 import inputs
 import pipeline
 import sys
+from sslog import logger
 
 
 ui_string = """<ui>

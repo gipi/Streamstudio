@@ -5,6 +5,7 @@ import gtk
 import pygst
 pygst.require("0.10")
 import gst
+from sslog import logger
 
 
 class VideoInput(gtk.Window):
