@@ -31,6 +31,8 @@ class Pipeline(gobject.GObject):
         # some sanity checks
         assert len(videodevicepaths) + 1 == len(monitor_windows)
 
+        gobject.GObject.__init__(self)
+
         self.videodevicepaths = videodevicepaths
         self.main_monitor_window = monitor_windows[0]
         self.monitor_windows = monitor_windows[1:]
