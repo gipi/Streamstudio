@@ -112,6 +112,9 @@ class Pipeline(gobject.GObject):
 
     def switch_to(self, monitor_idx):
         source_n = monitor_idx
+        n_sources = len(self.videodevicepaths)
+        if monitor_idx > n_sources:
+            raise AttributeError("there are only %d source%s" % (n_sources, "s" if n_sources > 1 else ""))
         padname = 'sink%d' % source_n
         logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
