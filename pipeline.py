@@ -1,3 +1,31 @@
+"""
+Main class to manage gstreamer pipeline construction.
+
+It simply attempts to build a pipeline with N sources and associated monitors (one for each source)
+and one only output. The source that will be sent to the final sink will be decided by an input-selector
+at runtime.
+
+Sources can be also added at runtime.
+
+All of this can be executed from a python terminal like the following session
+
+    >>> p = Pipeline(["/dev/video0", "/dev/video1"])
+    >>> p.play()
+
+After this three little windows pop up; you can switch between them using the switch_to() function
+(remember that the list of devices are 0-indexed).
+
+    >>> p.switch_to(1)
+
+If you ask for a switch to an unexisting source an AttributeError will be thrown.
+
+The Pipeline class has two signal associated with it
+
+ - set-sink: when the autovideosink looks for an xwindow output the instance ask if someone
+             want to be a sink (if no one responds then open a default window)
+
+ - error: some errors happened
+"""
 import gobject
 import gtk
 import gst
