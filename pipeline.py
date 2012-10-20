@@ -98,13 +98,11 @@ class Pipeline(gobject.GObject):
             t = message.type
             if t == gst.MESSAGE_EOS:
                 self.player.set_state(gst.STATE_NULL)
-                self.status="PLAY"
             elif t == gst.MESSAGE_ERROR:
                 err, debug = message.parse_error()
                 print "Error: %s" % err, debug
                 self.player.set_state(gst.STATE_NULL)
                 self.emit("error", err)
-                self.status="PLAY"
         return _cb
 
     def play(self):
