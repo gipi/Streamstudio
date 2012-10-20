@@ -131,3 +131,35 @@ class Pipeline(gobject.GObject):
         gst.warning('switching from %r to %r'
                     % (switch.get_property('active-pad'), padname))
         switch.emit('switch', newpad, stop_time, start_time)
+
+    def add_source(self, devicepath):
+        """Add a new videosrc and connect to the input-selector"""
+        n_actual_sink = len(self.videodevicepaths)
+
+        # first create all the elements
+        video_source = gst.element_factory_make("v4l2src")
+        video_source.set_property("device", devicepath)
+
+        imagesink = gst.element_factory_make("autovideosink")
+
+        queue1 = gst.element_factory_make("queue")
+        queue2 = gst.element_factory_make("queue")
+        queue3 = gst.element_factory_make("queue")
+
+        tee = gst.element_factory_make("tee", "t%d" % n_actual_sink)
+
+        # stop the pipeline
+        self.player.set_state(gst.STATE_PAUSED)
+
+        # add the elements to the pipeline
+        self.player.add(video_source, queue1, queue2, queue3, imagesink, tee)
+
+        # link them correctly to the first free sink of the input-selector
+        gst.element_link_many(video_source, queue1, tee, queue2, self.input_selector)
+        gst.element_link_many(tee, queue3, imagesink)
+
+        # restart the pipeline
+        self.player.set_state(gst.STATE_PLAYING)
+
+        # update the number of sources
+        self.videodevicepaths.append(devicepath)
