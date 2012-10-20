@@ -11,7 +11,7 @@ class Pipeline(gobject.GObject):
         'error': (
             gobject.SIGNAL_RUN_LAST,
             gobject.TYPE_NONE,
-            (gobject.TYPE_FLOAT,)
+            (gobject.TYPE_STRING,)
         ),
         # TODO: set-sink -> sink-request
         'set-sink': (
@@ -103,6 +103,7 @@ class Pipeline(gobject.GObject):
                 err, debug = message.parse_error()
                 print "Error: %s" % err, debug
                 self.player.set_state(gst.STATE_NULL)
+                self.emit("error", err)
                 self.status="PLAY"
         return _cb
 
