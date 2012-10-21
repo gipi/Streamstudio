@@ -14,6 +14,7 @@ import gst
 import inputs
 import pipeline
 import sys
+import gobject
 from sslog import logger
 
 
@@ -243,7 +244,6 @@ class StreamStudio(gtk.Window):
         """Open a dialog to choose the proper video device
            then pass chosed file to self._on_device_selection
         """
-        
         fs = gtk.FileChooserDialog("Choose a video device",None,
                         gtk.FILE_CHOOSER_ACTION_OPEN,
                         (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
@@ -265,7 +265,6 @@ class StreamStudio(gtk.Window):
         elif response == gtk.RESPONSE_CANCEL:
               self._alert_message('No video device selected')
         fs.destroy()
-
 
     def new_gs_pipeline(self):
         """Opens a dialog window to insert your own gstreamer pipeline"""
@@ -321,7 +320,6 @@ class StreamStudio(gtk.Window):
               self._alert_message('pipelines\' configuration file opening aborted')
         fs.destroy()
 
-
     def save(self):
         if not len(self.pipelines):
             dialog = gtk.MessageDialog(self,
@@ -375,12 +373,6 @@ class StreamStudio(gtk.Window):
         dialog.run()
         dialog.destroy()
 
-    def run(self):
-        self.show_all()
-
-        #self._players = []
-        gtk.main()
-
     def quit(self):
         gtk.main_quit()
 
@@ -393,5 +385,13 @@ if __name__ == '__main__':
         usage(sys.argv[0])
         sys.exit(1)
 
+    gobject.type_register(StreamStudio)
+    gobject.type_register(inputs.VideoInput)
+
+    gobject.threads_init()
+    gtk.gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
-    a.run()
+    a.show_all()
+    gtk.gdk.threads_enter()
+    gtk.main()
+    gtk.gdk.threads_leave()
