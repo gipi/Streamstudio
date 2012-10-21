@@ -100,6 +100,8 @@ class StreamStudio(gtk.Window):
         self.pipeline = pipeline.Pipeline(videodevicepaths)
         self.pipeline.connect('set-sink', self.set_sink_for)
 
+        self.connect("show", self._on_show)
+
     def _get_monitor_from_imagesink(self, imagesink):
         """Return the gtk.gdk.Window instance associated with given imagesink"""
         import re
@@ -221,6 +223,9 @@ class StreamStudio(gtk.Window):
 
     def _on_delete_event(self, window, event):
         self.quit()
+
+    def _on_show(self, *args):
+        self.pipeline.play()
 
     def _on_device_selection(self, filename):
         """
@@ -373,7 +378,6 @@ class StreamStudio(gtk.Window):
     def run(self):
         self.show_all()
 
-        self.pipeline.play()
         #self._players = []
         gtk.main()
 
