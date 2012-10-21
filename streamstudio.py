@@ -41,27 +41,6 @@ ui_string = """<ui>
   </toolbar>
 </ui>"""
 
-# from switch.py, FIXME: rewrite with VideoInput
-class VideoWidget(gtk.DrawingArea):
-    def __init__(self):
-        gtk.DrawingArea.__init__(self)
-        self.imagesink = None
-        self.unset_flags(gtk.DOUBLE_BUFFERED)
-
-    def do_expose_event(self, event):
-        if self.imagesink:
-            self.imagesink.expose()
-            return False
-        else:
-            return True
-
-    def set_sink(self, sink):
-        assert self.window.xid
-        self.imagesink = sink
-        self.imagesink.set_xwindow_id(self.window.xid)
-
-
-
 class StreamStudio(gtk.Window):
     def __init__(self, videodevicepaths, title='StreamStudio'):
         assert len(videodevicepaths) > 0
