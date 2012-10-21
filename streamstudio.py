@@ -142,7 +142,7 @@ class StreamStudio(gtk.Window):
         actions = [
             ('FileMenu', None, '_File'),
             ('Add a webcam',      gtk.STOCK_NEW, '_Add_a_webcam', '<control>N',
-             'Add a new webcam', self._on_action_new),
+             'Add a new video source', self._on_action_add_new_video_source),
             ('Add a gstreamer pipeline',      gtk.STOCK_DISCONNECT, '_Add_a_gstreamer_pipeline', '<control>G',
              'Add a new, alreasy tested, gstreamer pipeline', self._on_action_new_gs_pipeline),
             ('Open',     gtk.STOCK_OPEN, '_Open', '<control>O',
@@ -202,7 +202,7 @@ class StreamStudio(gtk.Window):
     def _on_tool_button__leave(self, toolbutton):
         self.statusbar.pop(self._menu_cix)
 
-    def _on_action_new(self, action):
+    def _on_action_add_new_video_source(self, action):
         self.new()
     
     def _on_action_new_gs_pipeline(self, action):
@@ -227,7 +227,7 @@ class StreamStudio(gtk.Window):
     def _on_show(self, *args):
         self.pipeline.play()
 
-    def _on_device_selection(self, filename):
+    def _on_video_source_device_selection(self, filename):
         """
         When the selection is successfully then get the filename
         create the proper pipeline and pass it to self._control_pipeline. 
@@ -239,7 +239,7 @@ class StreamStudio(gtk.Window):
         self.statusbar.push(self._menu_cix,message)
         print message
 
-    def new(self):
+    def add_video_source(self):
         """Open a dialog to choose the proper video device
            then pass chosed file to self._on_device_selection
         """
@@ -261,7 +261,7 @@ class StreamStudio(gtk.Window):
         fs.add_shortcut_folder("/dev")
         response = fs.run()
         if response == gtk.RESPONSE_OK:
-               self._on_device_selection(fs.get_filename())
+               self._on_video_source_device_selection(fs.get_filename())
         elif response == gtk.RESPONSE_CANCEL:
               self._alert_message('No video device selected')
         fs.destroy()
