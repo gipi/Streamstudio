@@ -59,6 +59,9 @@ class Pipeline(gobject.GObject):
         self.videodevicepaths = videodevicepaths
         self.main_monitor_name = main_monitor_name
 
+        # this will maintain an unique identifier for the input-selector sink
+        self.source_counter = 0
+
         self._setup_pipeline()
 
     def _build_pipeline_string(self):
@@ -72,19 +75,18 @@ class Pipeline(gobject.GObject):
         where each video device has a tee that sends the stream to an autovideosink (that
         will be the monitor) and to an input-selector
         """
-        count = 0
         pipes = []
         pipes.append("input-selector name=s ! queue ! autovideosink name=%s sync=false" % self.main_monitor_name)
         for devicepath in self.videodevicepaths:
             pipes.append(
                 "v4l2src device=%s ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! autovideosink" % (
                     devicepath,
-                    count,
-                    count,
-                    count
+                    self.source_counter,
+                    self.source_counter,
+                    self.source_counter
                 )
             )
-            count += 1
+            self.source_counter += 1
 
 
         return " ".join(pipes)
