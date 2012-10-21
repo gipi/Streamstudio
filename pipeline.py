@@ -127,8 +127,11 @@ class Pipeline(gobject.GObject):
             if t == gst.MESSAGE_EOS:
                 self.player.set_state(gst.STATE_NULL)
             elif t == gst.MESSAGE_ERROR:
+                # TODO: remove element if is a source
+                #and retry to restart the pipeline
                 err, debug = message.parse_error()
-                print "Error: %s" % err, debug
+                logger.error("fatal from '%s'" % message.src.get_name())
+                logger.error("%s:%s" % (err, debug))
                 self.player.set_state(gst.STATE_NULL)
                 self.emit("error", err)
         return _cb
