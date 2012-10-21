@@ -132,7 +132,7 @@ class StreamStudio(gtk.Window):
 
     def set_sink_for(self, obj, sink):
         """sink is an imagesink instance"""
-        logger.debug("%s:%s" % (obj, sink))
+        logger.debug("set sink %s:%s" % (obj, sink))
         monitor = self._get_monitor_from_imagesink(sink.get_name())
         monitor.set_sink(sink)
     def _create_ui(self):
