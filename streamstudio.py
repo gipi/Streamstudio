@@ -96,24 +96,26 @@ class StreamStudio(gtk.Window):
         childWidget = self.videowidget.main_vbox
         childWidget.reparent(self.sources_vbox)
 
-        self.monitors = [self._add_viewer_to_gui() for x in range(len(videodevicepaths))]
+        # place the various monitor inside a list
+        self.monitors = []
 
         self.pipeline = pipeline.Pipeline(videodevicepaths)
         self.pipeline.connect('set-sink', self.set_sink_for)
 
         self.connect("show", self._on_show)
 
-    def _get_monitor_from_imagesink(self, imagesink):
-        """Return the gtk.gdk.Window instance associated with given imagesink"""
-        import re
-        index_search = re.search("autovideosink(\d+)-actual-sink-xvimage", imagesink)
-        position = int(index_search.group(1)[0])
-        if position < len(self.monitors):
-            return self.monitors[position]
-        else:
+    def _get_monitor_from_imagesink(self, imagesinkname):
+        """Here simply check if the name is main_monitor-actual-sink-xvimage
+        if it is then return the main monitor otherwise create a new VideoInput
+        and
+        """
+        if imagesinkname == "main_monitor-actual-sink-xvimage":
             return self.videowidget
+        else:
+            return self._add_viewer_to_gui()
 
     def _add_viewer_to_gui(self):
+        """Create a VideoInput attach it to the main GUI and return it"""
         viewer = inputs.VideoInput() 
         childWidget = viewer.main_vbox
         childWidget.reparent(self.sources_vbox)
@@ -131,13 +133,19 @@ class StreamStudio(gtk.Window):
         viewer.connect('removed', _cb_created)
         viewer.connect('monitor-activated', _cb_activated)
 
+        self.monitors.append(viewer)
+
         return viewer
 
     def set_sink_for(self, obj, sink):
+        gtk.gdk.threads_enter()
         """sink is an imagesink instance"""
         logger.debug("set sink %s:%s" % (obj, sink))
-        monitor = self._get_monitor_from_imagesink(sink.get_name())
-        monitor.set_sink(sink)
+            monitor = self._get_monitor_from_imagesink(sink.get_name())
+            monitor.set_sink(sink)
+        except Exception, e:
+            logger.exception(e)
+        gtk.gdk.threads_leave()
     def _create_ui(self):
         ag = gtk.ActionGroup('AppActions')
         actions = [
@@ -204,14 +212,13 @@ class StreamStudio(gtk.Window):
         self.statusbar.pop(self._menu_cix)
 
     def _on_action_add_new_video_source(self, action):
-        self.new()
+        self.add_video_source()
     
     def _on_action_new_gs_pipeline(self, action):
         self.new_gs_pipeline()
 
     def _on_action_open(self, action):
         self.open()
-
 
     def _on_action_save(self, action):
         self.save()
@@ -233,8 +240,7 @@ class StreamStudio(gtk.Window):
         When the selection is successfully then get the filename
         create the proper pipeline and pass it to self._control_pipeline. 
         """
-        pipeline="v4l2src device=%s ! autovideosink" % filename	
-        self._control_pipeline(pipeline)
+        self.pipeline.add_source(filename)
 
     def _alert_message(self, message):
         self.statusbar.push(self._menu_cix,message)
