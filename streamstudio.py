@@ -102,7 +102,10 @@ class StreamStudio(gtk.Window):
         self.pipeline = pipeline.Pipeline(videodevicepaths)
         self.pipeline.connect('set-sink', self.set_sink_for)
 
-        self.connect("show", self._on_show)
+        # http://blog.yorba.org/jim/2010/10/those-realize-map-widget-signals.html
+        # map-event: is a GDK event. This is called when the window is now on-screen,
+        #            i.e. the connection is complete. It's like a callback.
+        self.connect("map-event", self._on_show)
 
     def _get_monitor_from_imagesink(self, imagesinkname):
         """Here simply check if the name is main_monitor-actual-sink-xvimage
