@@ -48,7 +48,7 @@ class Pipeline(gobject.GObject):
             (gobject.TYPE_OBJECT,)
         )
     }
-    def __init__(self, videodevicepaths):
+    def __init__(self, videodevicepaths, main_monitor_name="main_monitor"):
         """Initialize the Pipeline with the given device paths
         and with the windows to which will be played.
 
@@ -57,6 +57,7 @@ class Pipeline(gobject.GObject):
         gobject.GObject.__init__(self)
 
         self.videodevicepaths = videodevicepaths
+        self.main_monitor_name = main_monitor_name
 
         self._setup_pipeline()
 
@@ -73,6 +74,7 @@ class Pipeline(gobject.GObject):
         """
         count = 0
         pipes = []
+        pipes.append("input-selector name=s ! queue ! autovideosink name=%s sync=false" % self.main_monitor_name)
         for devicepath in self.videodevicepaths:
             pipes.append(
                 "v4l2src device=%s ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! autovideosink" % (
@@ -84,7 +86,6 @@ class Pipeline(gobject.GObject):
             )
             count += 1
 
-        pipes.append("input-selector name=s ! queue ! autovideosink")
 
         return " ".join(pipes)
 
@@ -102,14 +103,14 @@ class Pipeline(gobject.GObject):
 
         self.input_selector = self.player.get_by_name('s')
 
-
     def __cb_on_sync(self):
         """When an "on sync" message is emitted check if is
         a "prepare-xwindow-id" and if so assign the viewport
         to the correct autovideosink.
 
         Internally the name of the message's src attribute will be
-        like "autovideosinkX-actual-sink-xvimage".
+        like "<name>-actual-sink-xvimage" where <name> is like autovideosink0
+        for the default.
         """
         def on_sync_message(bus, message):
             if message.structure is None:
