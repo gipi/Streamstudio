@@ -87,7 +87,13 @@ class Pipeline(gobject.GObject):
         will be the monitor) and to an input-selector
         """
         pipes = []
-        pipes.append("input-selector name=s ! queue ! autovideosink name=%s sync=false" % self.main_monitor_name)
+        pipes.append("videotestsrc ! queue ! tee name=t%d ! queue ! input-selector name=s ! queue ! autovideosink name=%s sync=false" % (
+            self.source_counter,
+            self.main_monitor_name,
+        ))
+
+        self.source_counter += 1
+
         for devicepath in self.videodevicepaths:
             self.sources[devicepath] = {
                 "sink": self.source_counter,
@@ -102,7 +108,6 @@ class Pipeline(gobject.GObject):
                 )
             )
             self.source_counter += 1
-
 
         return " ".join(pipes)
 
