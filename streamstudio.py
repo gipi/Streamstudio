@@ -113,9 +113,11 @@ class StreamStudio(gtk.Window):
         and
         """
         if imagesinkname == "main_monitor-actual-sink-xvimage":
+            logger.debug("yes")
             return self.videowidget
         else:
-            return self._add_viewer_to_gui()
+            logger.debug("no")
+            self._add_viewer_to_gui()
 
     def _add_viewer_to_gui(self):
         """Create a VideoInput attach it to the main GUI and return it"""
@@ -141,14 +143,17 @@ class StreamStudio(gtk.Window):
         return viewer
 
     def set_sink_for(self, obj, sink):
-        gtk.gdk.threads_enter()
-        """sink is an imagesink instance"""
-        logger.debug("set sink %s:%s" % (obj, sink))
-            monitor = self._get_monitor_from_imagesink(sink.get_name())
-            monitor.set_sink(sink)
-        except Exception, e:
-            logger.exception(e)
-        gtk.gdk.threads_leave()
+        with gtk.gdk.lock:
+            #gtk.gdk.display_get_default().sync()
+            """sink is an imagesink instance"""
+            logger.debug("set sink %s:%s" % (obj, sink))
+            try:
+                monitor = self._get_monitor_from_imagesink(sink.get_name())
+                #monitor.set_sink(sink)
+            except Exception, e:
+                logger.exception(e)
+        logger.debug("set sink: exit")
+
     def _create_ui(self):
         ag = gtk.ActionGroup('AppActions')
         actions = [
@@ -236,7 +241,9 @@ class StreamStudio(gtk.Window):
         self.quit()
 
     def _on_show(self, *args):
+        #logger.debug("show()")
         self.pipeline.play()
+        pass
 
     def _on_video_source_device_selection(self, filename):
         """
