@@ -4,7 +4,7 @@ import logging
 stream = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
 
-logger = logging.getLogger('miao')
+logger = logging.getLogger(__file__)
 logger.setLevel(logging.DEBUG)
 logger.addHandler(stream)
 stream.setFormatter(formatter)
