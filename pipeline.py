@@ -222,6 +222,27 @@ class Pipeline(gobject.GObject):
 
         self.source_counter += 1
 
+    def remove_source(self, devicepath):
+        """Remove a source by name"""
+        if devicepath not in self.videodevicepaths:
+            raise AttributeError("'%s' is not a source" % devicepath)
+
+        self.player.set_state(gst.STATE_PAUSED)
+        source_element = self.player.get_by_name(devicepath)
+
+        elements_to_remove = self.sources[devicepath]['elements']
+        print elements_to_remove
+        elements_to_remove.append(source_element)
+        for element in elements_to_remove:
+            # STATE_NULL allow to garbage collect the element
+            element.set_state(gst.STATE_NULL)
+            self.player.remove(element)
+
+        self.sources.pop(devicepath)
+        self.videodevicepaths.remove(devicepath)
+
+        self.player.set_state(gst.STATE_PLAYING)
+
 
 if __name__ == "__main__":
     import sys
