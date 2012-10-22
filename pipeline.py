@@ -21,7 +21,7 @@ After this three little windows pop up; you can switch between them using the sw
 
 If you ask for a switch to an unexisting source an AttributeError will be thrown.
 
-The Pipeline class has two signal associated with it
+The Pipeline class has two signals associated with it
 
  - set-sink: when the autovideosink looks for an xwindow output the instance ask if someone
              want to be a sink (if no one responds then open a default window)
