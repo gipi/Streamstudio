@@ -208,7 +208,7 @@ class Pipeline(gobject.GObject):
         video_source.set_property("device", devicepath)
         video_source.set_property("name", devicepath)
 
-        imagesink = gst.element_factory_make("autovideosink")
+        imagesink = gst.element_factory_make("xvimagesink")
 
         queue1 = gst.element_factory_make("queue")
         queue2 = gst.element_factory_make("queue")
