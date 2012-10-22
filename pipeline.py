@@ -27,8 +27,8 @@ The Pipeline class has two signal associated with it
  - error: some errors happened
 """
 import gobject
-import gtk
 import gst
+import glib
 from sslog import logger
 
 
@@ -140,8 +140,6 @@ class Pipeline(gobject.GObject):
         return _cb
 
     def play(self):
-        gobject.threads_init()
-        gtk.gdk.threads_init()
         self.player.set_state(gst.STATE_PLAYING)
 
     def switch_to(self, monitor_idx):
@@ -197,3 +195,11 @@ class Pipeline(gobject.GObject):
 
         # update the number of sources
         self.videodevicepaths.append(devicepath)
+
+if __name__ == "__main__":
+    import sys
+    gobject.threads_init()
+    p = Pipeline(sys.argv[1:])
+    p.play()
+    loop = glib.MainLoop()
+    loop.run()
