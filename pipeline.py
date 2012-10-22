@@ -54,7 +54,8 @@ class Pipeline(gobject.GObject):
         """Initialize the Pipeline with the given device paths
         and with the windows to which will be played.
 
-        the first monitor_windows will be the main monitor.
+        The first monitor_windows will be the main monitor.
+
         If xsink_cb is passed then will be used instead of the 'set-sink' signal
         in order to set the prepare-xwindow-id
         """
