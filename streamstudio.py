@@ -44,7 +44,6 @@ ui_string = """<ui>
 
 class StreamStudio(gtk.Window):
     def __init__(self, videodevicepaths, title='StreamStudio'):
-        assert len(videodevicepaths) > 0
         gtk.Window.__init__(self)
         self.connect('delete-event', self._on_delete_event)
         self.set_position(gtk.WIN_POS_CENTER)
@@ -92,39 +91,31 @@ class StreamStudio(gtk.Window):
 
         self._menu_cix = -1
 
+        self.videodevicepaths = videodevicepaths
+        # this dictionary will have as keys the VideoInput instances
+        # and as values the respective video devices.
+        self.monitors = {} 
         self.videowidget = inputs.VideoInput()
         childWidget = self.videowidget.main_vbox
         childWidget.reparent(self.sources_vbox)
 
-        # place the various monitor inside a list
-        self.monitors = []
-
-        self.pipeline = pipeline.Pipeline(videodevicepaths)
-        self.pipeline.connect('set-sink', self.set_sink_for)
+        self.pipeline = pipeline.Pipeline([], xsink_cb=self._cb_for_xsink)
+        for device in videodevicepaths:
+            self.pipeline.add_source(device)
 
         # http://blog.yorba.org/jim/2010/10/those-realize-map-widget-signals.html
         # map-event: is a GDK event. This is called when the window is now on-screen,
         #            i.e. the connection is complete. It's like a callback.
         self.connect("map-event", self._on_show)
 
-    def _get_monitor_from_imagesink(self, imagesinkname):
-        """Here simply check if the name is main_monitor-actual-sink-xvimage
-        if it is then return the main monitor otherwise create a new VideoInput
-        and
-        """
-        if imagesinkname == "main_monitor-actual-sink-xvimage":
-            logger.debug("yes")
-            return self.videowidget
-        else:
-            logger.debug("no")
-            self._add_viewer_to_gui()
+    def _add_viewer_to_gui(self, devicepath=None):
+        """Create a VideoInput attach it to the main GUI and return it.
 
-    def _add_viewer_to_gui(self):
-        """Create a VideoInput attach it to the main GUI and return it"""
+        Also it possible to associate a dictionary to the instance.
+        """
         viewer = inputs.VideoInput() 
         childWidget = viewer.main_vbox
         childWidget.reparent(self.sources_vbox)
-        childWidget.show_all()
 
         # since we are ready to append, save the position
         # for the "remove" callback
@@ -133,23 +124,45 @@ class StreamStudio(gtk.Window):
 
         def _cb_activated(obj, *args, **kwargs):
             print ' # a monitor has been activated', obj
-            self.pipeline.switch_to(self.monitors.index(obj))
+            try:
+                self.pipeline.switch_to(self.monitors[obj])
+            except KeyError, e:
+                logger.error(list(self.monitors.keys()))
+                logger.exception(e)
 
         viewer.connect('removed', _cb_created)
         viewer.connect('monitor-activated', _cb_activated)
 
-        self.monitors.append(viewer)
+        if devicepath:
+            self.monitors[viewer] = devicepath
+
+        childWidget.show_all()
 
         return viewer
 
-    def set_sink_for(self, obj, sink):
+    def _get_monitor_from_devicepath(self, devicepath):
+        """Here simply check if the name is main_monitor
+        if it is then return the main monitor otherwise create a new VideoInput
+        and
+        """
+        if not devicepath:
+            logger.debug("yes")
+            return self.videowidget
+        else:
+            logger.debug("no")
+            return self._add_viewer_to_gui(devicepath=devicepath)
+
+    def _cb_for_xsink(self, imagesink, devicepath):
+        self.set_sink_for(None, imagesink, devicepath)
+
+    def set_sink_for(self, obj, sink, devicepath):
+        """sink is an imagesink instance"""
         with gtk.gdk.lock:
-            #gtk.gdk.display_get_default().sync()
-            """sink is an imagesink instance"""
-            logger.debug("set sink %s:%s" % (obj, sink))
+            gtk.gdk.display_get_default().sync()
+            logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
             try:
-                monitor = self._get_monitor_from_imagesink(sink.get_name())
-                #monitor.set_sink(sink)
+                monitor = self._get_monitor_from_devicepath(devicepath)
+                monitor.set_sink(sink)
             except Exception, e:
                 logger.exception(e)
         logger.debug("set sink: exit")
@@ -406,7 +419,7 @@ if __name__ == '__main__':
 
     gobject.threads_init()
     gtk.gdk.threads_init()
-    a = StreamStudio(sys.argv[1:])
+    a = StreamStudio([])
     a.show_all()
     gtk.gdk.threads_enter()
     gtk.main()
