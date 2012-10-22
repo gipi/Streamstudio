@@ -10,12 +10,14 @@ Sources can be also added at runtime.
 All of this can be executed from a python terminal like the following session
 
     >>> p = Pipeline(["/dev/video0", "/dev/video1"])
+    >>> gobject.threads_init()
     >>> p.play()
 
-After this three little windows pop up; you can switch between them using the switch_to() function
-(remember that the list of devices are 0-indexed).
+(gobject.threads_init() is mandatory otherwise a segfault will happen).
 
-    >>> p.switch_to(1)
+After this three little windows pop up; you can switch between them using the switch_to() function
+
+    >>> p.switch_to("/dev/video1")
 
 If you ask for a switch to an unexisting source an AttributeError will be thrown.
 
@@ -60,7 +62,13 @@ class Pipeline(gobject.GObject):
         self.main_monitor_name = main_monitor_name
 
         # this will maintain an unique identifier for the input-selector sink
+        # since we want to add/remove the number must be unique so increment only
         self.source_counter = 0
+        # self.sources has a key the video device paths and as value another dictionary
+        # indicating with the key 'sink' the id of the sink corresponding to the
+        # input-selector's sink associated. Also an 'element' key is present, it contains
+        # all the elements associated to this source.
+        self.sources = {}
 
         self._setup_pipeline()
 
@@ -78,8 +86,12 @@ class Pipeline(gobject.GObject):
         pipes = []
         pipes.append("input-selector name=s ! queue ! autovideosink name=%s sync=false" % self.main_monitor_name)
         for devicepath in self.videodevicepaths:
+            self.sources[devicepath] = {
+                "sink": self.source_counter,
+            }
             pipes.append(
-                "v4l2src device=%s ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! autovideosink" % (
+                "v4l2src device=%s name=%s ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! autovideosink" % (
+                    devicepath,
                     devicepath,
                     self.source_counter,
                     self.source_counter,
@@ -142,11 +154,12 @@ class Pipeline(gobject.GObject):
     def play(self):
         self.player.set_state(gst.STATE_PLAYING)
 
-    def switch_to(self, monitor_idx):
-        source_n = monitor_idx
-        n_sources = len(self.videodevicepaths)
-        if monitor_idx > n_sources:
-            raise AttributeError("there are only %d source%s" % (n_sources, "s" if n_sources > 1 else ""))
+    def switch_to(self, devicepath):
+        try:
+            source_n = self.sources[devicepath]["sink"]
+        except KeyError, e:
+            logger.exception(e)
+            raise AttributeError("source '%s' doesn't exist, add it before to launch this" % (devicepath,))
         padname = 'sink%d' % source_n
         logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
@@ -165,12 +178,15 @@ class Pipeline(gobject.GObject):
         switch.emit('switch', newpad, stop_time, start_time)
 
     def add_source(self, devicepath):
-        """Add a new videosrc and connect to the input-selector"""
-        n_actual_sink = len(self.videodevicepaths)
+        """Add a source to this pipeline and connect to the
+        input-selector.
 
+        If "name" is passed will be used internally as reference.
+        """
         # first create all the elements
         video_source = gst.element_factory_make("v4l2src")
         video_source.set_property("device", devicepath)
+        video_source.set_property("name", devicepath)
 
         imagesink = gst.element_factory_make("autovideosink")
 
@@ -178,7 +194,7 @@ class Pipeline(gobject.GObject):
         queue2 = gst.element_factory_make("queue")
         queue3 = gst.element_factory_make("queue")
 
-        tee = gst.element_factory_make("tee", "t%d" % n_actual_sink)
+        tee = gst.element_factory_make("tee", "t%d" % self.source_counter)
 
         # stop the pipeline
         self.player.set_state(gst.STATE_PAUSED)
@@ -187,7 +203,10 @@ class Pipeline(gobject.GObject):
         self.player.add(video_source, queue1, queue2, queue3, imagesink, tee)
 
         # link them correctly to the first free sink of the input-selector
-        gst.element_link_many(video_source, queue1, tee, queue2, self.input_selector)
+        gst.element_link_many(video_source, queue1, tee, queue2)
+        # set the sink to the last value free in source_counter
+        # otherwise input-selector reuse them
+        queue2.link_pads(None, self.input_selector, 'sink%d' % self.source_counter)
         gst.element_link_many(tee, queue3, imagesink)
 
         # restart the pipeline
@@ -195,6 +214,14 @@ class Pipeline(gobject.GObject):
 
         # update the number of sources
         self.videodevicepaths.append(devicepath)
+        # update the sources
+        self.sources[devicepath] = {
+            'sink': self.source_counter,
+            'elements': [queue1, queue2, queue3, tee, imagesink],
+        }
+
+        self.source_counter += 1
+
 
 if __name__ == "__main__":
     import sys
