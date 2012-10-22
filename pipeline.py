@@ -50,16 +50,19 @@ class Pipeline(gobject.GObject):
             (gobject.TYPE_OBJECT,)
         )
     }
-    def __init__(self, videodevicepaths, main_monitor_name="main_monitor"):
+    def __init__(self, videodevicepaths, main_monitor_name="main_monitor", xsink_cb=None):
         """Initialize the Pipeline with the given device paths
         and with the windows to which will be played.
 
         the first monitor_windows will be the main monitor.
+        If xsink_cb is passed then will be used instead of the 'set-sink' signal
+        in order to set the prepare-xwindow-id
         """
         gobject.GObject.__init__(self)
 
         self.videodevicepaths = videodevicepaths
         self.main_monitor_name = main_monitor_name
+        self.xsink_cb = xsink_cb
 
         # this will maintain an unique identifier for the input-selector sink
         # since we want to add/remove the number must be unique so increment only
@@ -125,6 +128,8 @@ class Pipeline(gobject.GObject):
         Internally the name of the message's src attribute will be
         like "<name>-actual-sink-xvimage" where <name> is like autovideosink0
         for the default.
+
+        If to the constructor was passed the 'xsink_cb' then it will be called.
         """
         def on_sync_message(bus, message):
             if message.structure is None:
@@ -132,6 +137,15 @@ class Pipeline(gobject.GObject):
             message_name = message.structure.get_name()
             if message_name == "prepare-xwindow-id":
                 imagesink = message.src
+                devicepath = None
+                # find out which device sends the message
+                for key, value in self.sources.iteritems():
+                    if imagesink in value['elements']:
+                        devicepath = key
+                        break
+
+                if self.xsink_cb:
+                    self.xsink_cb(imagesink, devicepath)
                 self.emit("set-sink", imagesink)
 
         return on_sync_message
