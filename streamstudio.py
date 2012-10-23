@@ -15,6 +15,7 @@ import inputs
 import pipeline
 import sys
 import gobject
+import thread
 from sslog import logger
 
 
@@ -409,17 +410,14 @@ def usage(progname):
     """ % progname
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        usage(sys.argv[0])
-        sys.exit(1)
-
+    import glib
     gobject.type_register(StreamStudio)
     gobject.type_register(inputs.VideoInput)
 
     gobject.threads_init()
     gtk.gdk.threads_init()
-    a = StreamStudio([])
+    a = StreamStudio(sys.argv[1:])
     a.show_all()
-    gtk.gdk.threads_enter()
-    gtk.main()
-    gtk.gdk.threads_leave()
+    thread.start_new_thread(gtk.main, ())
+    loop = glib.MainLoop()
+    loop.run()
