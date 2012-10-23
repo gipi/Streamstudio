@@ -170,9 +170,11 @@ class Pipeline(gobject.GObject):
         return _cb
 
     def play(self):
+        """Set the internal gstreamer pipeline to STATE_PLAYING"""
         self.player.set_state(gst.STATE_PLAYING)
 
     def switch_to(self, devicepath):
+        """Select the device path passed as argument as source for the output"""
         try:
             source_n = self.sources[devicepath]["sink"]
         except KeyError, e:
