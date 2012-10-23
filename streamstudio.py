@@ -98,10 +98,7 @@ class StreamStudio(gtk.Window):
         self.videowidget = inputs.VideoInput()
         childWidget = self.videowidget.main_vbox
         childWidget.reparent(self.sources_vbox)
-
-        self.pipeline = pipeline.Pipeline([], xsink_cb=self._cb_for_xsink)
-        for device in videodevicepaths:
-            self.pipeline.add_source(device)
+        childWidget.show_all()
 
         # http://blog.yorba.org/jim/2010/10/those-realize-map-widget-signals.html
         # map-event: is a GDK event. This is called when the window is now on-screen,
@@ -254,9 +251,11 @@ class StreamStudio(gtk.Window):
         self.quit()
 
     def _on_show(self, *args):
-        #logger.debug("show()")
+        self.pipeline = pipeline.Pipeline([], xsink_cb=self._cb_for_xsink)
+        for device in self.videodevicepaths:
+            self.pipeline.add_source(device)
+
         self.pipeline.play()
-        pass
 
     def _on_video_source_device_selection(self, filename):
         """
