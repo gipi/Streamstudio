@@ -11,6 +11,10 @@ In order to make this program runs you need
  - glade
  - pygst
 
+There are also some tests, run them with
+
+ $ python -m unittest tests
+
 TROUBLESHOOTING
 ---------------
 
