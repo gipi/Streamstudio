@@ -87,13 +87,15 @@ class Pipeline(gobject.GObject):
         will be the monitor) and to an input-selector
         """
         pipes = []
-        pipes.append("videotestsrc ! queue ! tee name=t%d ! queue ! input-selector name=s ! queue ! autovideosink name=%s sync=false" % (
+        pipes.append("videotestsrc ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! autovideosink sync=false" % (
             self.source_counter,
-            self.main_monitor_name,
-        ))
+            self.source_counter,
+            self.source_counter,
+       ))
 
         self.source_counter += 1
 
+        # TODO: DEPRECATE THE device list for constructor
         for devicepath in self.videodevicepaths:
             self.sources[devicepath] = {
                 "sink": self.source_counter,
@@ -109,7 +111,7 @@ class Pipeline(gobject.GObject):
             )
             self.source_counter += 1
 
-        return " ".join(pipes)
+        return " ".join(pipes) + " input-selector name=s ! queue ! autovideosink name=%s sync=false" % self.main_monitor_name
 
     def _setup_pipeline(self):
         """Launch the pipeline and connect bus to the right signals"""
