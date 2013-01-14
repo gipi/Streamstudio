@@ -174,6 +174,10 @@ class Pipeline(gobject.GObject):
         """Set the internal gstreamer pipeline to STATE_PLAYING"""
         self.player.set_state(gst.STATE_PLAYING)
 
+    def kill(self):
+        self.player.set_state(gst.STATE_PAUSED)
+        self.player.set_state(gst.STATE_NULL)
+
     def switch_to(self, devicepath):
         """Select the device path passed as argument as source for the output"""
         try:
