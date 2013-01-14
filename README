@@ -1,3 +1,26 @@
+We would like to manage multiple video sources and switch
+through them using a GTK GUI but also from python command line.
+
+DEPENDENCIES
+------------
+
+In order to make this program runs you need
+
+ - pygtk
+ - gobject
+ - glade
+ - pygst
+
+TROUBLESHOOTING
+---------------
+
+The glade file must be edited with a version up to 3.8 since they support
+gtk2 with which is programmed this application.
+
+For more info read this
+
+ <http://www.gtkforums.com/viewtopic.php?f=3&t=55304>
+
 GSTREAMER
 ---------
 
@@ -9,6 +32,7 @@ http://luisbg.blogalia.com/historias/61887
 http://www.jonobacon.org/2006/08/28/getting-started-with-gstreamer-with-python/
 http://pygstdocs.berlios.de/
 http://gstreamer.freedesktop.org/data/doc/gstreamer/head/manual/html/section-dynamic-pipelines.html
+http://wiki.pitivi.org/wiki/PyGST_Tutorial/Combining_Audio_and_Video
 
 Pipeline dumps
 ● Dump pipelines as graphviz graphs
@@ -26,7 +50,7 @@ V4L2Loopback
 ------------
 
 In order to test is possible to use v4l2loopback that creates
-for you some fake video devices to full with stream of your choice.
+for you some fake video devices with stream of your choice.
 
 The project is hosted at
 
@@ -34,3 +58,4 @@ The project is hosted at
 
 
  # apt-get install v4l2loopback-dkms v4l2loopback-utils
+
