@@ -31,6 +31,7 @@ The Pipeline class has two signals associated with it
 import gobject
 import gst
 import glib
+import os
 from sslog import logger
 
 
@@ -203,6 +204,10 @@ class Pipeline(gobject.GObject):
 
         If "name" is passed will be used internally as reference.
         """
+        # check that the argument exists
+        os.stat(devicepath)
+        if devicepath in self.videodevicepaths:
+            raise Exception("device '%s' is yet a source" % devicepath)
         # first create all the elements
         video_source = gst.element_factory_make("v4l2src")
         video_source.set_property("device", devicepath)
