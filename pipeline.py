@@ -196,6 +196,7 @@ class Pipeline(gobject.GObject):
         except KeyError, e:
             logger.exception(e)
             raise AttributeError("source '%s' doesn't exist, add it before to launch this" % (devicepath,))
+
         padname = 'sink%d' % source_n
         logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
@@ -220,9 +221,12 @@ class Pipeline(gobject.GObject):
         If "name" is passed will be used internally as reference.
         """
         # check that the argument exists
-        os.stat(devicepath)
+        try:
+            os.stat(devicepath)
+        except OSError:
+            raise AttributeError("source '%s' doesn't exist" % devicepath)
         if devicepath in self.videodevicepaths:
-            raise Exception("device '%s' is yet a source" % devicepath)
+            raise AttributeError("device '%s' is yet a source" % devicepath)
         # first create all the elements
         video_source = gst.element_factory_make("v4l2src")
         video_source.set_property("device", devicepath)
