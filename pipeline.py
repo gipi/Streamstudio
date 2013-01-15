@@ -75,6 +75,15 @@ class Pipeline(gobject.GObject):
 
         self._setup_pipeline()
 
+    def _add_source(self, devicepath, elements=None):
+        """Add the given source to the internal dictionary"""
+        self.sources[devicepath] = {
+            'sink': self.source_counter,
+            'elements': elements,
+        }
+
+        self.source_counter += 1
+
     def _build_pipeline_string(self):
         """The final pipeline is in the form like
 
@@ -93,7 +102,7 @@ class Pipeline(gobject.GObject):
             self.source_counter,
        ))
 
-        self.source_counter += 1
+        self._add_source("fake")
 
         # TODO: DEPRECATE THE device list for constructor
         for devicepath in self.videodevicepaths:
@@ -246,12 +255,14 @@ class Pipeline(gobject.GObject):
         # update the number of sources
         self.videodevicepaths.append(devicepath)
         # update the sources
-        self.sources[devicepath] = {
-            'sink': self.source_counter,
-            'elements': [queue1, queue2, queue3, tee, imagesink],
-        }
-
-        self.source_counter += 1
+        self._add_source(
+            devicepath, [
+                queue1,
+                queue2,
+                queue3,
+                tee,
+                imagesink
+            ])
 
     def remove_source(self, devicepath):
         """Remove a source by name"""
