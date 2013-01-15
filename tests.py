@@ -19,14 +19,21 @@ class PipelineTests(unittest.TestCase):
     def test_add_unexistent(self):
         self.p.play()
 
-        self.p.add_source("/dev/video666")
+        try:
+            self.p.add_source("/dev/video666")
+        except AttributeError:
+            pass
 
         time.sleep(4)
     def test_switch_to_unexistent(self):
 
         self.p.play()
 
-        self.p.switch_to("/dev/video666")
+        try:
+            self.p.switch_to("/dev/video666")
+        except AttributeError:
+            pass
+
         time.sleep(4)
 
     def test_switch(self):
