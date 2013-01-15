@@ -38,6 +38,7 @@ class PipelineTests(unittest.TestCase):
 
     def test_switch(self):
         self.p.add_source(PipelineTests.VIDEO_DEV)
+        time.sleep(4)
         self.p.switch_to(PipelineTests.VIDEO_DEV)
 
         self.p.play()
