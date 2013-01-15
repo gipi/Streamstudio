@@ -50,6 +50,11 @@ Logging
 ● Run apps with:
 GST_DEBUG="*:2,GST_CAPS:4" ./myapp
 
+TODO
+----
+
+Try the 1.0 version <https://wiki.ubuntu.com/Novacut/GStreamer1.0>.
+
 V4L2Loopback
 ------------
 
