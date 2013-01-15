@@ -140,6 +140,9 @@ class Pipeline(gobject.GObject):
         bus.connect('message', self.__cb_factory())
 
         self.input_selector = self.player.get_by_name('s')
+        # TODO: create the videotestsrc piece of pipeline programmatically
+        #       so to have special cases
+        self.sources["fake"]["elements"] = [self.player.get_by_name("fakesrc"),]
 
     def __cb_on_sync(self):
         """When an "on sync" message is emitted check if is
