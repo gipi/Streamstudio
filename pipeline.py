@@ -78,7 +78,7 @@ class Pipeline(gobject.GObject):
     def _build_pipeline_string(self):
         """The final pipeline is in the form like
 
-        v4l2src device=/dev/videoX ! queue ! tee name=t0 ! queue ! s.sink0 t0. ! queue ! autovideosink
+        videotestsrc               ! queue ! tee name=t0 ! queue ! s.sink0 t0. ! queue ! autovideosink
         v4l2src device=/dev/videoX ! queue ! tee name=t1 ! queue ! s.sink1 t1. ! queue ! autovideosink
         ...
         input-selector name=s ! queue ! autovideosink
