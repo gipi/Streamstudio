@@ -76,7 +76,12 @@ class Pipeline(gobject.GObject):
         self._setup_pipeline()
 
     def _add_source(self, devicepath, elements=None):
-        """Add the given source to the internal dictionary"""
+        """Add the given source to the internal dictionary.
+
+        The dictionary uses as key the devicepath and as value another
+        dictionary with the id in the 'sink' key and a list of elements
+        in the key named 'elements'.
+        """
         self.sources[devicepath] = {
             'sink': self.source_counter,
             'elements': elements,
