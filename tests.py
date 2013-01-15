@@ -2,6 +2,7 @@ import unittest
 import time
 
 class PipelineTests(unittest.TestCase):
+    VIDEO_DEV = "/dev/video0"
     def setUp(self):
         import gobject
         gobject.threads_init()
@@ -29,8 +30,8 @@ class PipelineTests(unittest.TestCase):
         time.sleep(4)
 
     def test_switch(self):
-        self.p.add_source("/dev/video1")
-        self.p.switch_to("/dev/video1")
+        self.p.add_source(PipelineTests.VIDEO_DEV)
+        self.p.switch_to(PipelineTests.VIDEO_DEV)
 
         self.p.play()
 
@@ -39,7 +40,7 @@ class PipelineTests(unittest.TestCase):
     def test_add_source(self):
         self.p.play()
 
-        self.p.add_source("/dev/video1")
+        self.p.add_source(PipelineTests.VIDEO_DEV)
 
         time.sleep(4)
 
