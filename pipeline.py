@@ -155,9 +155,9 @@ class Pipeline(gobject.GObject):
                 imagesink = message.src
                 devicepath = None
                 # find out which device sends the message
-                for key, value in self.sources.iteritems():
-                    if imagesink in value['elements']:
-                        devicepath = key
+                for dpath, value in self.sources.iteritems():
+                    if value['elements'] and imagesink in value['elements']:
+                        devicepath = dpath
                         break
 
                 if self.xsink_cb:
