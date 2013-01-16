@@ -39,9 +39,6 @@ class StreamStudio(GuiMixin):
         childWidget.reparent(self.main_monitor_widget)
         childWidget.show_all()
 
-        # http://blog.yorba.org/jim/2010/10/those-realize-map-widget-signals.html
-        # map-event: is a GDK event. This is called when the window is now on-screen,
-        #            i.e. the connection is complete. It's like a callback.
 
     def _add_viewer_to_gui(self, devicepath=None):
         """Create a VideoInput attach it to the main GUI and return it.
@@ -124,6 +121,9 @@ class StreamStudio(GuiMixin):
         self.quit()
 
     def _on_show(self, *args):
+        # http://blog.yorba.org/jim/2010/10/those-realize-map-widget-signals.html
+        # map-event: is a GDK event. This is called when the window is now on-screen,
+        #            i.e. the connection is complete. It's like a callback.
         self.pipeline = pipeline.Pipeline([], xsink_cb=self._cb_for_xsink)
         for device in self.videodevicepaths:
             self.pipeline.add_source(device)
