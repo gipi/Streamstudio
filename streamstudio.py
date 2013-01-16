@@ -275,6 +275,7 @@ class StreamStudio(GuiMixin):
         dialog.destroy()
 
     def quit(self):
+        self.pipeline.kill()
         gtk.main_quit()
 
 def usage(progname):
@@ -287,4 +288,7 @@ if __name__ == '__main__':
     gtk.gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.show_all()
+    #thread.start_new_thread(gtk.main, ())
+    #loop = glib.MainLoop()
+    #loop.run()
     gtk.main()
