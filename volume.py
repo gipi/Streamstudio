@@ -7,24 +7,14 @@ import gst
 import gtk
 import gtk.glade
 
-class VolumeWidget():
+from gui import GuiMixin
+
+class VolumeWidget(GuiMixin):
+    main_class = 'mainWindow'
+    glade_file_path = 'volume-meter.glade'
     def __init__(self):
-        self._create_ui()
+        self._build_gui()
         self._create_pipeline()
-
-    def _create_ui(self):
-        # http://www.pygtk.org/articles/application-pygtk-glade/Building_an_Application_with_PyGTK_and_Glade.htm
-        # http://stackoverflow.com/questions/2668618/python-glade-could-not-create-gladexml-object
-        self.gladefile = 'volume-meter.glade'
-        builder = gtk.Builder()
-        builder.add_from_file(self.gladefile)
-        builder.connect_signals(self)
-
-        # save it for future access
-        self.builder = builder
-
-    def show_all(self):
-        self.builder.get_object('mainWindow').show_all()
 
     def _create_pipeline(self):
         """Create a simple pipeline with an audio test source having a level
