@@ -25,6 +25,7 @@ class StreamStudio(GuiMixin):
     def __init__(self, videodevicepaths, title='StreamStudio'):
         self._build_gui()
         self.main_monitor_widget = self._get_ui_element_by_name('frame1')
+        self.main_monitor_widget.set_size_request(600, 400)
         self.sources_vbox = self._get_ui_element_by_name('box3')
 
         self.videodevicepaths = videodevicepaths
