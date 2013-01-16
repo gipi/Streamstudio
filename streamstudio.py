@@ -287,6 +287,4 @@ if __name__ == '__main__':
     gtk.gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.show_all()
-    thread.start_new_thread(gtk.main, ())
-    loop = glib.MainLoop()
-    loop.run()
+    gtk.main()
