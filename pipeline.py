@@ -92,8 +92,8 @@ class Pipeline(gobject.GObject):
     def _build_pipeline_string(self):
         """The final pipeline is in the form like
 
-        videotestsrc               ! queue ! tee name=t0 ! queue ! s.sink0 t0. ! queue ! autovideosink
-        v4l2src device=/dev/videoX ! queue ! tee name=t1 ! queue ! s.sink1 t1. ! queue ! autovideosink
+        videotestsrc               ! tee name=t0 ! queue ! s.sink0 t0. ! queue ! autovideosink
+        v4l2src device=/dev/videoX ! tee name=t1 ! queue ! s.sink1 t1. ! queue ! autovideosink
         ...
         input-selector name=s ! queue ! autovideosink
 
@@ -101,7 +101,7 @@ class Pipeline(gobject.GObject):
         will be the monitor) and to an input-selector
         """
         pipes = []
-        pipes.append("videotestsrc ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc sync=false" % (
+        pipes.append("videotestsrc ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc sync=false" % (
             self.source_counter,
             self.source_counter,
             self.source_counter,
@@ -242,7 +242,6 @@ class Pipeline(gobject.GObject):
 
         imagesink = gst.element_factory_make("xvimagesink")
 
-        queue1 = gst.element_factory_make("queue")
         queue2 = gst.element_factory_make("queue")
         queue3 = gst.element_factory_make("queue")
 
@@ -252,10 +251,10 @@ class Pipeline(gobject.GObject):
         self.player.set_state(gst.STATE_PAUSED)
 
         # add the elements to the pipeline
-        self.player.add(video_source, queue1, queue2, queue3, imagesink, tee)
+        self.player.add(video_source, queue2, queue3, imagesink, tee)
 
         # link them correctly to the first free sink of the input-selector
-        gst.element_link_many(video_source, queue1, tee, queue2)
+        gst.element_link_many(video_source, tee, queue2)
         # set the sink to the last value free in source_counter
         # otherwise input-selector reuse them
         queue2.link_pads(None, self.input_selector, 'sink%d' % self.source_counter)
@@ -269,7 +268,6 @@ class Pipeline(gobject.GObject):
         # update the sources
         self._add_source(
             devicepath, [
-                queue1,
                 queue2,
                 queue3,
                 tee,
