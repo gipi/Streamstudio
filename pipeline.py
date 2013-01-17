@@ -324,7 +324,9 @@ class Pipeline(gobject.GObject):
 if __name__ == "__main__":
     import sys
     gobject.threads_init()
-    p = Pipeline(sys.argv[1:])
+    p = Pipeline([])
+    for source in sys.argv[1:]:
+        p.add_source(source)
     p.play()
     loop = glib.MainLoop()
     loop.run()
