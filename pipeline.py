@@ -185,8 +185,10 @@ class Pipeline(gobject.GObject):
                 err, debug = message.parse_error()
                 logger.error("fatal from '%s'" % message.src.get_name())
                 logger.error("%s:%s" % (err, debug))
-                self.player.set_state(gst.STATE_NULL)
+
                 self.emit("error", err)
+
+                self.remove_source(message.src.get_name())
         return _cb
 
     def play(self):
@@ -279,12 +281,35 @@ class Pipeline(gobject.GObject):
         if devicepath not in self.videodevicepaths:
             raise AttributeError("'%s' is not a source" % devicepath)
 
-        self.player.set_state(gst.STATE_PAUSED)
+        _source = self.sources[devicepath]
+
         source_element = self.player.get_by_name(devicepath)
 
-        elements_to_remove = self.sources[devicepath]['elements']
-        print elements_to_remove
-        elements_to_remove.append(source_element)
+        elements_to_remove = _source['elements']
+        # "pad block on the wrong pad, block src pads in push mode and sink pads in pull mode."+
+        # the first element is the queue linked with input-selector
+        queue_to_unlink = elements_to_remove.pop(0)
+        # When the pipeline is stalled, for example in PAUSED, this can take
+        # an indeterminate amount of time. You can pass None as the callback 
+        # to make this call block. Be careful with this blocking call as it
+        # might not return for reasons stated above.
+        queue_to_unlink.get_pad("src").set_blocked(True)
+        source_element.get_pad("src").set_blocked(True)
+
+        self.player.set_state(gst.STATE_PAUSED)
+        source_element.unlink(queue_to_unlink)
+        source_element.set_state(gst.STATE_NULL)
+        self.player.remove(source_element)
+
+        queue_to_unlink.set_state(gst.STATE_NULL)
+        queue_to_unlink.unlink(self.input_selector)
+        self.player.remove(queue_to_unlink)
+        # add source to the list of element to remove
+        elements_to_remove.insert(0, source_element)
+
+        elements_to_remove.pop().set_state(gst.STATE_NULL)
+
+        logger.debug('will be removed %s' % elements_to_remove)
         for element in elements_to_remove:
             # STATE_NULL allow to garbage collect the element
             element.set_state(gst.STATE_NULL)
