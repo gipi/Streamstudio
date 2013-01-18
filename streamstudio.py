@@ -8,14 +8,10 @@ More example in future.'''
 import pygtk
 pygtk.require('2.0')
 import gtk
-import pygst
-pygst.require("0.10")
-import gst
 import inputs
 import pipeline
 import sys
 import gobject
-import thread
 from sslog import logger
 from gui import GuiMixin
 
@@ -283,12 +279,8 @@ def usage(progname):
     """ % progname
 
 if __name__ == '__main__':
-    import glib
     gobject.threads_init()
     gtk.gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.show_all()
-    #thread.start_new_thread(gtk.main, ())
-    #loop = glib.MainLoop()
-    #loop.run()
     gtk.main()
