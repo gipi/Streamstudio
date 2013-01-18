@@ -109,22 +109,6 @@ class Pipeline(gobject.GObject):
 
         self._add_source("fake")
 
-        # TODO: DEPRECATE THE device list for constructor
-        for devicepath in self.videodevicepaths:
-            self.sources[devicepath] = {
-                "sink": self.source_counter,
-            }
-            pipes.append(
-                "v4l2src device=%s name=%s ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink" % (
-                    devicepath,
-                    devicepath,
-                    self.source_counter,
-                    self.source_counter,
-                    self.source_counter
-                )
-            )
-            self.source_counter += 1
-
         return " ".join(pipes) + " input-selector name=s ! queue ! xvimagesink name=%s sync=false" % self.main_monitor_name
 
     def _setup_pipeline(self):
