@@ -244,6 +244,7 @@ class Pipeline(gobject.GObject):
         # set the sink to the last value free in source_counter
         # otherwise input-selector reuse them
         queue2.link_pads(None, self.input_selector, 'sink%d' % self.source_counter)
+        # finally link a src of the tee to the imagesink
         gst.element_link_many(tee, queue3, imagesink)
 
         # restart the pipeline
