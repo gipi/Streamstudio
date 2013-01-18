@@ -101,15 +101,15 @@ class Pipeline(gobject.GObject):
         will be the monitor) and to an input-selector
         """
         pipes = []
-        pipes.append("videotestsrc ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc sync=false" % (
+        pipes.append("videotestsrc ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc" % (
             self.source_counter,
             self.source_counter,
             self.source_counter,
-       ))
+        ))
 
         self._add_source("fake")
 
-        return " ".join(pipes) + " input-selector name=s ! queue ! xvimagesink name=%s sync=false" % self.main_monitor_name
+        return " ".join(pipes) + " input-selector name=s ! queue ! xvimagesink name=%s" % self.main_monitor_name
 
     def _setup_pipeline(self):
         """Launch the pipeline and connect bus to the right signals"""
