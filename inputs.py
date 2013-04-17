@@ -1,14 +1,8 @@
-import gobject
-import pygtk
-pygtk.require('2.0')
-import gtk
-import pygst
-pygst.require("0.10")
-import gst
 from sslog import logger
+from gi.repository import Gtk, GObject
 
 
-class VideoInput(gtk.Window):
+class VideoInput(Gtk.Window):
     '''This class create a viewers with its own toolbar and its own gtk.Window
     for a gstreamer video pipeline who could be imported in other windows 
     using reparenting:
@@ -27,13 +21,13 @@ class VideoInput(gtk.Window):
     # http://www.pygtk.org/articles/subclassing-gobject/sub-classing-gobject-in-python.htm#d0e570
     __gsignals__ = {
         'removed': (
-            gobject.SIGNAL_RUN_LAST,
-            gobject.TYPE_NONE,
-            (gobject.TYPE_FLOAT,)
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_FLOAT,)
         ),
         'monitor-activated': (
-            gobject.SIGNAL_RUN_LAST,
-            gobject.TYPE_NONE,
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
             ()
         )
     }
@@ -41,10 +35,10 @@ class VideoInput(gtk.Window):
     def __init__(self):
         self.status="PAUSE"
         self.label=""
-        gtk.Window.__init__(self)
+        Gtk.Window.__init__(self)
         self.set_title(self.get_label())
         self.connect('delete-event', self._on_delete_event)
-        self.set_position(gtk.WIN_POS_CENTER)
+        self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(200, 200)
         self.ui_string = """
         <ui>
@@ -63,12 +57,12 @@ class VideoInput(gtk.Window):
         uimgr.connect('disconnect-proxy',
                       self._on_uimanager__disconnect_proxy)
         toolbar = uimgr.get_widget('/Toolbar')
-        label = gtk.Label(self.get_label())
-        da = gtk.DrawingArea()
-        vbox=gtk.VBox()
-        vbox.pack_start(label,expand=False)
+        label = Gtk.Label(self.get_label())
+        da = Gtk.DrawingArea()
+        vbox=Gtk.VBox()
+        vbox.pack_start(label, False, True, 0)
         vbox.add(da)
-        vbox.pack_end(toolbar,expand=False)
+        vbox.pack_end(toolbar, False, True, 0)
         self.main_vbox=vbox
         self.da=da
         self.add(vbox)
@@ -78,7 +72,7 @@ class VideoInput(gtk.Window):
         if not tooltip:
             return
 
-        if isinstance(widget, gtk.MenuItem):
+        if isinstance(widget, Gtk.MenuItem):
             cid = widget.connect('select', self._on_menu_item__select,
                                  tooltip)
             cid2 = widget.connect('deselect', self._on_menu_item__deselect)
@@ -94,7 +88,7 @@ class VideoInput(gtk.Window):
         if not cids:
             return
 
-        if isinstance(widget, gtk.ToolButton):
+        if isinstance(widget, Gtk.ToolButton):
             widget = widget.child
 
         for name, cid in cids:
@@ -109,24 +103,24 @@ class VideoInput(gtk.Window):
     #    raise
 
     def _on_delete_event(self,window,event):
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def _create_ui(self):
-        ag = gtk.ActionGroup('AppActions')
+        ag = Gtk.ActionGroup('AppActions')
         actions = [
-            ('Play',     gtk.STOCK_MEDIA_PLAY, '_Play', '',
+            ('Play',     Gtk.STOCK_MEDIA_PLAY, '_Play', '',
              'Playing this video input', self._on_action_play),
-            ('Pause',     gtk.STOCK_MEDIA_PAUSE, '_Pause', '',
+            ('Pause',     Gtk.STOCK_MEDIA_PAUSE, '_Pause', '',
              'Pause playing this video input', self._on_action_pause),
-            ('Rec',     gtk.STOCK_MEDIA_RECORD, '_Rec', '',
+            ('Rec',     Gtk.STOCK_MEDIA_RECORD, '_Rec', '',
              'Record this video input', self._on_action_rec),
-            ('Remove',     gtk.STOCK_QUIT, '_Remove', '',
+            ('Remove',     Gtk.STOCK_QUIT, '_Remove', '',
              'Remove this video input', self._on_action_remove),
-            ('Active',     gtk.STOCK_OK, '_Active', '',
+            ('Active',     Gtk.STOCK_OK, '_Active', '',
              'Remove this video input', self._on_action_active),
             ]
         ag.add_actions(actions)
-        ui = gtk.UIManager()
+        ui = Gtk.UIManager()
         ui.insert_action_group(ag, 0)
         ui.add_ui_from_string(self.ui_string)
         self.add_accel_group(ui.get_accel_group())
@@ -144,7 +138,7 @@ class VideoInput(gtk.Window):
         xid = self.da.window.xid
         assert xid
         self.imagesink = sink
-        gtk.gdk.display_get_default().sync()
+        Gtk.gdk.display_get_default().sync()
         self.imagesink.set_property("force-aspect-ratio", True)
         self.imagesink.set_xwindow_id(xid)
 
@@ -182,7 +176,6 @@ class VideoInput(gtk.Window):
 
 
 if __name__ == '__main__':
-    
     b = VideoInput()
     b.set_label("Test on /dev/video0")
-    gtk.main()
+    Gtk.main()

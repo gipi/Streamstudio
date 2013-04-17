@@ -28,27 +28,28 @@ The Pipeline class has two signals associated with it
 
  - error: some errors happened
 """
-import gobject
-import gst
-import glib
 import os
 from sslog import logger
+from gi.repository import Gst, GObject
+
+import platform; print 'python', platform.python_version()
+print Gst.version_string()
 
 
-class Pipeline(gobject.GObject):
+class Pipeline(GObject.GObject):
     """Main class for multimedia handling.
     """
     __gsignals__ = {
         'error': (
-            gobject.SIGNAL_RUN_LAST,
-            gobject.TYPE_NONE,
-            (gobject.TYPE_STRING,)
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_STRING,)
         ),
         # TODO: set-sink -> sink-request
         'set-sink': (
-            gobject.SIGNAL_RUN_LAST,
-            gobject.TYPE_NONE,
-            (gobject.TYPE_OBJECT,)
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_OBJECT,)
         )
     }
     def __init__(self, videodevicepaths, main_monitor_name="main_monitor", xsink_cb=None):
@@ -58,7 +59,9 @@ class Pipeline(gobject.GObject):
         If xsink_cb is passed then will be used instead of the 'set-sink' signal
         in order to set the prepare-xwindow-id
         """
-        gobject.GObject.__init__(self)
+        Gst.init_check(None)
+        GObject.GObject.__init__(self)
+
 
         self.videodevicepaths = videodevicepaths
         self.main_monitor_name = main_monitor_name
@@ -92,8 +95,8 @@ class Pipeline(gobject.GObject):
     def _build_pipeline_string(self):
         """The final pipeline is in the form like
 
-        videotestsrc               ! queue ! tee name=t0 ! queue ! s.sink0 t0. ! queue ! autovideosink
-        v4l2src device=/dev/videoX ! queue ! tee name=t1 ! queue ! s.sink1 t1. ! queue ! autovideosink
+        videotestsrc               ! tee name=t0 ! queue ! s.sink0 t0. ! queue ! autovideosink
+        v4l2src device=/dev/videoX ! tee name=t1 ! queue ! s.sink1 t1. ! queue ! autovideosink
         ...
         input-selector name=s ! queue ! autovideosink
 
@@ -101,37 +104,21 @@ class Pipeline(gobject.GObject):
         will be the monitor) and to an input-selector
         """
         pipes = []
-        pipes.append("videotestsrc ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc sync=false" % (
+        pipes.append("videotestsrc ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc" % (
             self.source_counter,
             self.source_counter,
             self.source_counter,
-       ))
+        ))
 
         self._add_source("fake")
 
-        # TODO: DEPRECATE THE device list for constructor
-        for devicepath in self.videodevicepaths:
-            self.sources[devicepath] = {
-                "sink": self.source_counter,
-            }
-            pipes.append(
-                "v4l2src device=%s name=%s ! queue ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink" % (
-                    devicepath,
-                    devicepath,
-                    self.source_counter,
-                    self.source_counter,
-                    self.source_counter
-                )
-            )
-            self.source_counter += 1
-
-        return " ".join(pipes) + " input-selector name=s ! queue ! xvimagesink name=%s sync=false" % self.main_monitor_name
+        return " ".join(pipes) + " input-selector name=s ! queue ! xvimagesink name=%s" % self.main_monitor_name
 
     def _setup_pipeline(self):
         """Launch the pipeline and connect bus to the right signals"""
         self.pipeline_string = self._build_pipeline_string()
         logger.debug(self.pipeline_string)
-        self.player = gst.parse_launch(self.pipeline_string)
+        self.player = Gst.parse_launch(self.pipeline_string)
         bus = self.player.get_bus()
         bus.enable_sync_message_emission()
         bus.add_signal_watch()
@@ -177,25 +164,27 @@ class Pipeline(gobject.GObject):
     def __cb_factory(self):
         def _cb(bus, message):
             t = message.type
-            if t == gst.MESSAGE_EOS:
-                self.player.set_state(gst.STATE_NULL)
-            elif t == gst.MESSAGE_ERROR:
+            if t == Gst.MESSAGE_EOS:
+                self.player.set_state(Gst.State.NULL)
+            elif t == Gst.MESSAGE_ERROR:
                 # TODO: remove element if is a source
                 #and retry to restart the pipeline
                 err, debug = message.parse_error()
                 logger.error("fatal from '%s'" % message.src.get_name())
                 logger.error("%s:%s" % (err, debug))
-                self.player.set_state(gst.STATE_NULL)
+
                 self.emit("error", err)
+
+                self.remove_source(message.src.get_name())
         return _cb
 
     def play(self):
         """Set the internal gstreamer pipeline to STATE_PLAYING"""
-        self.player.set_state(gst.STATE_PLAYING)
+        self.player.set_state(Gst.State.PLAYING)
 
     def kill(self):
-        self.player.set_state(gst.STATE_PAUSED)
-        self.player.set_state(gst.STATE_NULL)
+        self.player.set_state(Gst.State.PAUSED)
+        self.player.set_state(Gst.State.NULL)
 
     def switch_to(self, devicepath):
         """Select the device path passed as argument as source for the output"""
@@ -212,13 +201,13 @@ class Pipeline(gobject.GObject):
         newpad = switch.get_static_pad(padname)
         start_time = newpad.get_property('running-time')
 
-        gst.warning('stop time = %d' % (stop_time,))
-        gst.warning('stop time = %s' % (gst.TIME_ARGS(stop_time),))
+        Gst.warning('stop time = %d' % (stop_time,))
+        Gst.warning('stop time = %s' % (Gst.TIME_ARGS(stop_time),))
 
-        gst.warning('start time = %d' % (start_time,))
-        gst.warning('start time = %s' % (gst.TIME_ARGS(start_time),))
+        Gst.warning('start time = %d' % (start_time,))
+        Gst.warning('start time = %s' % (Gst.TIME_ARGS(start_time),))
 
-        gst.warning('switching from %r to %r'
+        Gst.warning('switching from %r to %r'
                     % (switch.get_property('active-pad'), padname))
         switch.emit('switch', newpad, stop_time, start_time)
 
@@ -236,40 +225,46 @@ class Pipeline(gobject.GObject):
         if devicepath in self.videodevicepaths:
             raise AttributeError("device '%s' is yet a source" % devicepath)
         # first create all the elements
-        video_source = gst.element_factory_make("v4l2src")
+        video_source = Gst.ElementFactory.make("v4l2src", None)
         video_source.set_property("device", devicepath)
         video_source.set_property("name", devicepath)
 
-        imagesink = gst.element_factory_make("xvimagesink")
+        imagesink = Gst.ElementFactory.make("xvimagesink", None)
 
-        queue1 = gst.element_factory_make("queue")
-        queue2 = gst.element_factory_make("queue")
-        queue3 = gst.element_factory_make("queue")
+        queue2 = Gst.ElementFactory.make("queue", None)
+        queue3 = Gst.ElementFactory.make("queue", None)
 
-        tee = gst.element_factory_make("tee", "t%d" % self.source_counter)
+        tee = Gst.ElementFactory.make("tee", "t%d" % self.source_counter)
 
         # stop the pipeline
-        self.player.set_state(gst.STATE_PAUSED)
+        self.player.set_state(Gst.State.PAUSED)
 
         # add the elements to the pipeline
-        self.player.add(video_source, queue1, queue2, queue3, imagesink, tee)
+        self.player.add(video_source)
+        self.player.add(queue2)
+        self.player.add(queue3)
+        self.player.add(imagesink)
+        self.player.add(tee)
 
         # link them correctly to the first free sink of the input-selector
-        gst.element_link_many(video_source, queue1, tee, queue2)
+        video_source.link(tee)
+        tee.link(queue2)
+
         # set the sink to the last value free in source_counter
         # otherwise input-selector reuse them
         queue2.link_pads(None, self.input_selector, 'sink%d' % self.source_counter)
-        gst.element_link_many(tee, queue3, imagesink)
+        # finally link a src of the tee to the imagesink
+        tee.link(queue3)
+        queue3.link(imagesink)
 
         # restart the pipeline
-        self.player.set_state(gst.STATE_PLAYING)
+        self.player.set_state(Gst.State.PLAYING)
 
         # update the number of sources
         self.videodevicepaths.append(devicepath)
         # update the sources
         self._add_source(
             devicepath, [
-                queue1,
                 queue2,
                 queue3,
                 tee,
@@ -281,12 +276,35 @@ class Pipeline(gobject.GObject):
         if devicepath not in self.videodevicepaths:
             raise AttributeError("'%s' is not a source" % devicepath)
 
-        self.player.set_state(gst.STATE_PAUSED)
+        _source = self.sources[devicepath]
+
         source_element = self.player.get_by_name(devicepath)
 
-        elements_to_remove = self.sources[devicepath]['elements']
-        print elements_to_remove
-        elements_to_remove.append(source_element)
+        elements_to_remove = _source['elements']
+        # "pad block on the wrong pad, block src pads in push mode and sink pads in pull mode."+
+        # the first element is the queue linked with input-selector
+        queue_to_unlink = elements_to_remove.pop(0)
+        # When the pipeline is stalled, for example in PAUSED, this can take
+        # an indeterminate amount of time. You can pass None as the callback 
+        # to make this call block. Be careful with this blocking call as it
+        # might not return for reasons stated above.
+        queue_to_unlink.get_pad("src").set_blocked(True)
+        source_element.get_pad("src").set_blocked(True)
+
+        self.player.set_state(Gst.State.PAUSED)
+        source_element.unlink(queue_to_unlink)
+        source_element.set_state(Gst.State.NULL)
+        self.player.remove(source_element)
+
+        queue_to_unlink.set_state(Gst.State.NULL)
+        queue_to_unlink.unlink(self.input_selector)
+        self.player.remove(queue_to_unlink)
+        # add source to the list of element to remove
+        elements_to_remove.insert(0, source_element)
+
+        elements_to_remove.pop().set_state(Gst.State.NULL)
+
+        logger.debug('will be removed %s' % elements_to_remove)
         for element in elements_to_remove:
             # STATE_NULL allow to garbage collect the element
             element.set_state(gst.STATE_NULL)
@@ -295,13 +313,12 @@ class Pipeline(gobject.GObject):
         self.sources.pop(devicepath)
         self.videodevicepaths.remove(devicepath)
 
-        self.player.set_state(gst.STATE_PLAYING)
+        self.player.set_state(Gst.State.PLAYING)
 
 
 if __name__ == "__main__":
     import sys
-    gobject.threads_init()
-    p = Pipeline(sys.argv[1:])
+    p = Pipeline([])
+    for source in sys.argv[1:]:
+        p.add_source(source)
     p.play()
-    loop = glib.MainLoop()
-    loop.run()

@@ -1,7 +1,6 @@
 """Simple class to inizialize its own GUI loading it by a glade file.
 """
-import gtk
-
+from gi.repository import Gtk
 class GuiMixin(object):
     """Mixin to be used to manage easily GUI.
 
@@ -20,7 +19,7 @@ class GuiMixin(object):
 
         print glade_file
 
-        builder = gtk.Builder()
+        builder = Gtk.Builder()
         builder.add_from_file(glade_file)
         builder.connect_signals(self)
 
