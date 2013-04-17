@@ -5,16 +5,19 @@ input who generate a virtual webcam as output
 
 More example in future.'''
 
-import pygtk
-pygtk.require('2.0')
-import gtk
 import inputs
-import pipeline
 import sys
-import gobject
 from sslog import logger
 from gui import GuiMixin
 
+from gi.repository import Gtk
+import pipeline
+
+print 'Gtk %d.%d.%d' % (
+    Gtk.get_major_version(),
+    Gtk.get_minor_version(),
+    Gtk.get_micro_version(),
+)
 
 class StreamStudio(GuiMixin):
     main_class = 'ssWindow'
@@ -85,8 +88,8 @@ class StreamStudio(GuiMixin):
 
     def set_sink_for(self, obj, sink, devicepath):
         """sink is an imagesink instance"""
-        with gtk.gdk.lock:
-            gtk.gdk.display_get_default().sync()
+        with Gtk.gdk.lock:
+            Gtk.gdk.display_get_default().sync()
             logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
             try:
                 monitor = self._get_monitor_from_devicepath(devicepath)
@@ -272,15 +275,13 @@ class StreamStudio(GuiMixin):
 
     def quit(self):
         self.pipeline.kill()
-        gtk.main_quit()
+        Gtk.main_quit()
 
 def usage(progname):
     print """usage: %s [video1 video2 ...]
     """ % progname
 
 if __name__ == '__main__':
-    gobject.threads_init()
-    gtk.gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.show_all()
-    gtk.main()
+    Gtk.main()
