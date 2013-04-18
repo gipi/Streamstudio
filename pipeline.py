@@ -9,11 +9,13 @@ Sources can be also added at runtime.
 
 All of this can be executed from a python terminal like the following session
 
-    >>> p = Pipeline(["/dev/video0", "/dev/video1"])
+    >>> p = Pipeline()
     >>> gobject.threads_init()
     >>> p.play()
+    >>> p.add_source('/dev/video0')
+    >>> p.add_source('/dev/video1')
 
-(gobject.threads_init() is mandatory otherwise a segfault will happen).
+(GObject.threads_init() is mandatory otherwise a segfault will happen).
 
 After this three little windows pop up; you can switch between them using the switch_to() function
 
@@ -52,7 +54,7 @@ class Pipeline(GObject.GObject):
             (GObject.TYPE_OBJECT,)
         )
     }
-    def __init__(self, videodevicepaths, main_monitor_name="main_monitor", xsink_cb=None):
+    def __init__(self, main_monitor_name="main_monitor", xsink_cb=None):
         """Initialize the Pipeline with the given device paths
         and with the windows to which will be played.
 
@@ -63,7 +65,7 @@ class Pipeline(GObject.GObject):
         GObject.GObject.__init__(self)
 
 
-        self.videodevicepaths = videodevicepaths
+        self.videodevicepaths = []
         self.main_monitor_name = main_monitor_name
         self.xsink_cb = xsink_cb
 
@@ -103,16 +105,9 @@ class Pipeline(GObject.GObject):
         where each video device has a tee that sends the stream to an autovideosink (that
         will be the monitor) and to an input-selector
         """
-        pipes = []
-        pipes.append("videotestsrc ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc" % (
-            self.source_counter,
-            self.source_counter,
-            self.source_counter,
-        ))
-
         self._add_source("fake")
 
-        return " ".join(pipes) + " input-selector name=s ! queue ! xvimagesink name=%s" % self.main_monitor_name
+        return 'videotestsrc ! video/x-raw,framerate=1/5 ! queue ! tee name=t0 ! input-selector name=s ! queue ! xvimagesink name=main_monitor  s.sink0 t0. ! xvimagesink name=fakesrc'
 
     def _setup_pipeline(self):
         """Launch the pipeline and connect bus to the right signals"""
@@ -318,7 +313,10 @@ class Pipeline(GObject.GObject):
 
 if __name__ == "__main__":
     import sys
-    p = Pipeline([])
+    p = Pipeline()
+    GObject.threads_init()
     for source in sys.argv[1:]:
         p.add_source(source)
     p.play()
+    l = GObject.MainLoop()
+    l.run()
