@@ -107,7 +107,7 @@ class Pipeline(GObject.GObject):
         """
         self._add_source("fake")
 
-        return 'videotestsrc ! video/x-raw,framerate=1/5 ! queue ! tee name=t0 ! input-selector name=s ! queue ! xvimagesink name=main_monitor  s.sink0 t0. ! xvimagesink name=fakesrc'
+        return 'videotestsrc ! video/x-raw,framerate=1/5 ! queue ! tee name=t0 ! input-selector name=s ! queue ! xvimagesink name=main_monitor sync=false s.sink0 t0. ! xvimagesink name=fakesrc sync=false'
 
     def _setup_pipeline(self):
         """Launch the pipeline and connect bus to the right signals"""
@@ -138,9 +138,9 @@ class Pipeline(GObject.GObject):
         If to the constructor was passed the 'xsink_cb' then it will be called.
         """
         def on_sync_message(bus, message):
-            if message.structure is None:
+            if message.get_structure() is None:
                 return
-            message_name = message.structure.get_name()
+            message_name = message.get_structure().get_name()
             if message_name == "prepare-xwindow-id":
                 imagesink = message.src
                 devicepath = None
@@ -225,6 +225,7 @@ class Pipeline(GObject.GObject):
         video_source.set_property("name", devicepath)
 
         imagesink = Gst.ElementFactory.make("xvimagesink", None)
+        imagesink.set_property("sync", False)
 
         queue2 = Gst.ElementFactory.make("queue", None)
         queue3 = Gst.ElementFactory.make("queue", None)
@@ -302,7 +303,7 @@ class Pipeline(GObject.GObject):
         logger.debug('will be removed %s' % elements_to_remove)
         for element in elements_to_remove:
             # STATE_NULL allow to garbage collect the element
-            element.set_state(gst.STATE_NULL)
+            element.set_state(Gst.STATE_NULL)
             self.player.remove(element)
 
         self.sources.pop(devicepath)
