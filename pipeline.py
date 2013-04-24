@@ -159,9 +159,9 @@ class Pipeline(GObject.GObject):
     def __cb_factory(self):
         def _cb(bus, message):
             t = message.type
-            if t == Gst.MESSAGE_EOS:
+            if t == Gst.MessageType.EOS:
                 self.player.set_state(Gst.State.NULL)
-            elif t == Gst.MESSAGE_ERROR:
+            elif t == Gst.MessageType.ERROR:
                 # TODO: remove element if is a source
                 #and retry to restart the pipeline
                 err, debug = message.parse_error()
