@@ -311,13 +311,33 @@ class Pipeline(GObject.GObject):
 
         self.player.set_state(Gst.State.PLAYING)
 
+import cmd
+
+class PipelineShell(cmd.Cmd):
+    def __init__(self):
+        cmd.Cmd.__init__(self)
+        self.prompt = "\033[1;31mstreamstudio> \033[0m"
+        self.p = Pipeline()
+        GObject.threads_init()
+        #l = GObject.MainLoop()
+        #l.run()
+
+    def do_EOF(self, line):
+        return True
+
+    def do_add(self, line):
+        """Add a source"""
+        if line == "":
+            return
+
+        self.p.add_source(line)
+
+    def do_play(self, line):
+        self.p.play()
+
+    def do_switch(self, line):
+        self.p.switch_to(line)
+
 
 if __name__ == "__main__":
-    import sys
-    p = Pipeline()
-    GObject.threads_init()
-    for source in sys.argv[1:]:
-        p.add_source(source)
-    p.play()
-    l = GObject.MainLoop()
-    l.run()
+    PipelineShell().cmdloop()
