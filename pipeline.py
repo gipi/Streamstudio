@@ -61,9 +61,9 @@ class Pipeline(GObject.GObject):
         If xsink_cb is passed then will be used instead of the 'set-sink' signal
         in order to set the prepare-xwindow-id
         """
-        Gst.init_check(None)
+        import sys
+        Gst.init_check(sys.argv)
         GObject.GObject.__init__(self)
-
 
         self.videodevicepaths = []
         self.main_monitor_name = main_monitor_name
