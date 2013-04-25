@@ -192,7 +192,7 @@ class Pipeline(GObject.GObject):
             logger.exception(e)
             raise AttributeError("source '%s' doesn't exist, add it before to launch this" % (devicepath,))
 
-        padname = 'sink%d' % source_n
+        padname = 'sink_%d' % source_n
         logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
         newpad = switch.get_static_pad(padname)
@@ -250,7 +250,7 @@ class Pipeline(GObject.GObject):
 
         # set the sink to the last value free in source_counter
         # otherwise input-selector reuse them
-        queue2.link_pads(None, self.input_selector, 'sink%d' % self.source_counter)
+        queue2.link_pads(None, self.input_selector, 'sink_%d' % self.source_counter)
         # finally link a src of the tee to the imagesink
         tee.link(queue3)
         queue3.link(imagesink)
