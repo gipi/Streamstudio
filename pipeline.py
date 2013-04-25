@@ -329,13 +329,19 @@ class PipelineShell(cmd.Cmd):
         if line == "":
             return
 
-        self.p.add_source(line)
+        try:
+            self.p.add_source(line)
+        except AttributeError as e:
+            print e.message
 
     def do_play(self, line):
         self.p.play()
 
     def do_switch(self, line):
-        self.p.switch_to(line)
+        try:
+            self.p.switch_to(line)
+        except AttributeError as e:
+            print e.message
 
 
 if __name__ == "__main__":
