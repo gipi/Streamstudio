@@ -338,6 +338,16 @@ class PipelineShell(cmd.Cmd):
         except AttributeError as e:
             print e.message
 
+    def do_remove(self, line):
+        """Remove a source, pass a device path as argument"""
+        if line == "":
+            return
+
+        try:
+            self.p.remove_source(line)
+        except AttributeError as e:
+            print e.message
+
     def do_play(self, line):
         self.p.play()
 
