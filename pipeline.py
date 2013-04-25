@@ -223,6 +223,7 @@ class Pipeline(GObject.GObject):
         video_source.set_property("name", devicepath)
 
         imagesink = Gst.ElementFactory.make("xvimagesink", None)
+        # sink=False otherwise all is hanging
         imagesink.set_property("sync", False)
 
         queue2 = Gst.ElementFactory.make("queue", None)
