@@ -195,7 +195,6 @@ class Pipeline(GObject.GObject):
         padname = 'sink%d' % source_n
         logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
-        stop_time = switch.emit('block')
         newpad = switch.get_static_pad(padname)
         start_time = newpad.get_property('running-time')
 
@@ -207,8 +206,8 @@ class Pipeline(GObject.GObject):
 
         Gst.warning('switching from %r to %r'
                     % (switch.get_property('active-pad'), padname))
-        switch.emit('switch', newpad, stop_time, start_time)
 
+        switch.set_property("active-pad", newpad)
     def add_source(self, devicepath):
         """Add a source to this pipeline and connect to the
         input-selector.
