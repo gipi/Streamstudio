@@ -34,6 +34,9 @@ import os
 from sslog import logger
 from gi.repository import Gst, GObject
 
+import gi
+gi.require_version('Gst', '1.0')
+
 import platform; print 'python', platform.python_version()
 print Gst.version_string()
 
