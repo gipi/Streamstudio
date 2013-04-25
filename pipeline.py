@@ -325,6 +325,9 @@ class PipelineShell(cmd.Cmd):
     def do_EOF(self, line):
         return True
 
+    def emptyline(self):
+        return ''
+
     def do_add(self, line):
         """Add a source"""
         if line == "":
