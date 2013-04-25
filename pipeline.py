@@ -198,13 +198,9 @@ class Pipeline(GObject.GObject):
         newpad = switch.get_static_pad(padname)
         start_time = newpad.get_property('running-time')
 
-        Gst.warning('stop time = %d' % (stop_time,))
-        Gst.warning('stop time = %s' % (Gst.TIME_ARGS(stop_time),))
 
-        Gst.warning('start time = %d' % (start_time,))
-        Gst.warning('start time = %s' % (Gst.TIME_ARGS(start_time),))
 
-        Gst.warning('switching from %r to %r'
+        logger.info('switching from %r to %r'
                     % (switch.get_property('active-pad'), padname))
 
         switch.set_property("active-pad", newpad)
