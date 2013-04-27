@@ -88,12 +88,15 @@ class StreamStudio(GuiMixin):
 
     def set_sink_for(self, obj, sink, devicepath):
         """sink is an imagesink instance"""
+        Gdk.threads_enter()
         logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
         try:
             monitor = self._get_monitor_from_devicepath(devicepath)
             monitor.set_sink(sink)
         except Exception, e:
             logger.exception(e)
+        finally:
+            Gdk.threads_leave()
         logger.debug("set sink: exit")
 
     def _on_action_add_new_video_source(self, action):
