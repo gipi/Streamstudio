@@ -10,7 +10,7 @@ import sys
 from sslog import logger
 from gui import GuiMixin
 
-from gi.repository import Gtk,GObject
+from gi.repository import Gtk, GObject, Gdk
 import pipeline
 
 print 'Gtk %d.%d.%d' % (
@@ -88,14 +88,12 @@ class StreamStudio(GuiMixin):
 
     def set_sink_for(self, obj, sink, devicepath):
         """sink is an imagesink instance"""
-        with Gtk.gdk.lock:
-            Gtk.gdk.display_get_default().sync()
-            logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
-            try:
-                monitor = self._get_monitor_from_devicepath(devicepath)
-                monitor.set_sink(sink)
-            except Exception, e:
-                logger.exception(e)
+        logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
+        try:
+            monitor = self._get_monitor_from_devicepath(devicepath)
+            monitor.set_sink(sink)
+        except Exception, e:
+            logger.exception(e)
         logger.debug("set sink: exit")
 
     def _on_action_add_new_video_source(self, action):

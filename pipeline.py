@@ -145,7 +145,7 @@ class Pipeline(GObject.GObject):
             if message.get_structure() is None:
                 return
             message_name = message.get_structure().get_name()
-            if message_name == "prepare-xwindow-handle":
+            if message_name == "prepare-window-handle":
                 imagesink = message.src
                 devicepath = None
                 # find out which device sends the message
