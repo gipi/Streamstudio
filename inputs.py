@@ -135,12 +135,12 @@ class VideoInput(Gtk.Window):
         return self.label
 
     def set_sink(self, sink):
-        xid = self.da.window.xid
+        xid = self.da.get_property('window.xid').get_xid()
         assert xid
         self.imagesink = sink
         Gtk.gdk.display_get_default().sync()
         self.imagesink.set_property("force-aspect-ratio", True)
-        self.imagesink.set_xwindow_id(xid)
+        self.imagesink.set_xwindow_handle(xid)
 
     def _on_action_play(self, action):
         self.play()
