@@ -284,6 +284,7 @@ def usage(progname):
 
 if __name__ == '__main__':
     GObject.threads_init()
+    Gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.show_all()
     Gtk.main()
