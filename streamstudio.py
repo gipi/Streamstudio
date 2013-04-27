@@ -10,7 +10,7 @@ import sys
 from sslog import logger
 from gui import GuiMixin
 
-from gi.repository import Gtk
+from gi.repository import Gtk,GObject
 import pipeline
 
 print 'Gtk %d.%d.%d' % (
@@ -282,6 +282,7 @@ def usage(progname):
     """ % progname
 
 if __name__ == '__main__':
+    GObject.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.show_all()
     Gtk.main()
