@@ -146,10 +146,10 @@ class StreamStudio(GuiMixin):
            then pass chosed file to self._on_device_selection
         """
         fs = Gtk.FileChooserDialog("Choose a video device",None,
-                        Gtk.FILE_CHOOSER_ACTION_OPEN,
-                        (Gtk.STOCK_CANCEL, Gtk.RESPONSE_CANCEL,
-                                        Gtk.STOCK_OPEN, Gtk.RESPONSE_OK))
-        fs.set_default_response(Gtk.RESPONSE_OK)
+                        Gtk.FileChooserAction.OPEN,
+                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                        Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        fs.set_default_response(Gtk.ResponseType.OK)
         filter = Gtk.FileFilter()
         filter.set_name("Video devices")
         filter.add_pattern("video*")
@@ -161,9 +161,9 @@ class StreamStudio(GuiMixin):
         fs.set_current_folder("/dev")
         fs.add_shortcut_folder("/dev")
         response = fs.run()
-        if response == Gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
                self._on_video_source_device_selection(fs.get_filename())
-        elif response == Gtk.RESPONSE_CANCEL:
+        elif response == Gtk.ResponseType.CANCEL:
               self._alert_message('No video device selected')
         fs.destroy()
 
