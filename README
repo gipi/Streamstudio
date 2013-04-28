@@ -1,59 +1,51 @@
 We would like to manage multiple video sources and switch
 through them using a GTK GUI but also from python command line.
 
+Quick start:
+
+  $ git clone https://github.com/gipi/Streamstudio.git
+  $ cd Streamstudio
+  $ python streamstudio.py /dev/video0
+
+
 DEPENDENCIES
 ------------
 
 In order to make this program runs you need
 
- - pygtk
- - gobject
- - glade
- - pygst
+ - Gtk3
+ - GObject
+ - Glade
+ - Gstreamer1.0
+
+This program use the PyGOBject introspection <https://live.gnome.org/PyGObject>
+in order to be able to use directly the C APIs.
+
+In some distributions there isn't available yet gstreamer1.0, if you want
+to use this application, you can use the gstreamer-repo available to the
+github repository present at the address
+
+    https://github.com/gipi/gstreamer-repo.git
+
+
+TESTS
+-----
 
 There are also some tests, run them with
 
  $ python -m unittest tests
 
-TROUBLESHOOTING
----------------
 
-The glade file must be edited with a version up to 3.8 since they support
-gtk2 with which is programmed this application.
+DEBUGGING GSTREAMER PART
+------------------------
 
-For more info read this
+It's possible to debug internal pipelines using the
 
- <http://www.gtkforums.com/viewtopic.php?f=3&t=55304>
+  GST_DEBUG_DUMP_DOT_DIR=$PWD
+  GST_DEBUG="*:2,GST_CAPS:4"
 
-GSTREAMER
----------
+environmental variables.
 
-Launch a player with the image taken from the webcam
-
- $ gst-launch v4l2src ! ffmpegcolorspace ! xvimagesink
-
-http://luisbg.blogalia.com/historias/61887
-http://www.jonobacon.org/2006/08/28/getting-started-with-gstreamer-with-python/
-http://pygstdocs.berlios.de/
-http://gstreamer.freedesktop.org/data/doc/gstreamer/head/manual/html/section-dynamic-pipelines.html
-http://wiki.pitivi.org/wiki/PyGST_Tutorial/Combining_Audio_and_Video
-
-Pipeline dumps
-● Dump pipelines as graphviz graphs
-● Use dot to render them
-● Run apps with:
-GST_DEBUG_DUMP_DOT_DIR=$PWD ./myapp
-
-Logging
-● Powerful logging subsystem
-● Level, categories, ...
-● Run apps with:
-GST_DEBUG="*:2,GST_CAPS:4" ./myapp
-
-TODO
-----
-
-Try the 1.0 version <https://wiki.ubuntu.com/Novacut/GStreamer1.0>.
 
 V4L2Loopback
 ------------
