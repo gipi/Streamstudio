@@ -1,5 +1,5 @@
 from sslog import logger
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, GdkX11, GstVideo, Gdk
 
 
 class VideoInput(Gtk.Window):
@@ -135,12 +135,12 @@ class VideoInput(Gtk.Window):
         return self.label
 
     def set_sink(self, sink):
-        xid = self.da.window.xid
+        xid = self.da.get_property('window').get_xid()
         assert xid
         self.imagesink = sink
-        Gtk.gdk.display_get_default().sync()
+        #Gdk.display_get_default().sync()
         self.imagesink.set_property("force-aspect-ratio", True)
-        self.imagesink.set_xwindow_id(xid)
+        self.imagesink.set_window_handle(xid)
 
     def _on_action_play(self, action):
         self.play()

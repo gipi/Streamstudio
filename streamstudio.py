@@ -10,7 +10,7 @@ import sys
 from sslog import logger
 from gui import GuiMixin
 
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject, Gdk
 import pipeline
 
 print 'Gtk %d.%d.%d' % (
@@ -88,14 +88,15 @@ class StreamStudio(GuiMixin):
 
     def set_sink_for(self, obj, sink, devicepath):
         """sink is an imagesink instance"""
-        with Gtk.gdk.lock:
-            Gtk.gdk.display_get_default().sync()
-            logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
-            try:
-                monitor = self._get_monitor_from_devicepath(devicepath)
-                monitor.set_sink(sink)
-            except Exception, e:
-                logger.exception(e)
+        Gdk.threads_enter()
+        logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
+        try:
+            monitor = self._get_monitor_from_devicepath(devicepath)
+            monitor.set_sink(sink)
+        except Exception, e:
+            logger.exception(e)
+        finally:
+            Gdk.threads_leave()
         logger.debug("set sink: exit")
 
     def _on_action_add_new_video_source(self, action):
@@ -144,39 +145,39 @@ class StreamStudio(GuiMixin):
         """Open a dialog to choose the proper video device
            then pass chosed file to self._on_device_selection
         """
-        fs = gtk.FileChooserDialog("Choose a video device",None,
-                        gtk.FILE_CHOOSER_ACTION_OPEN,
-                        (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                        gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        fs.set_default_response(gtk.RESPONSE_OK)
-        filter = gtk.FileFilter()
+        fs = Gtk.FileChooserDialog("Choose a video device",None,
+                        Gtk.FileChooserAction.OPEN,
+                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                        Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+        fs.set_default_response(Gtk.ResponseType.OK)
+        filter = Gtk.FileFilter()
         filter.set_name("Video devices")
         filter.add_pattern("video*")
         fs.add_filter(filter)
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name("All files")
         filter.add_pattern("*")
         fs.add_filter(filter)
         fs.set_current_folder("/dev")
         fs.add_shortcut_folder("/dev")
         response = fs.run()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.ResponseType.OK:
                self._on_video_source_device_selection(fs.get_filename())
-        elif response == gtk.RESPONSE_CANCEL:
+        elif response == Gtk.ResponseType.CANCEL:
               self._alert_message('No video device selected')
         fs.destroy()
 
     def new_gs_pipeline(self):
         """Opens a dialog window to insert your own gstreamer pipeline"""
-        label = gtk.Label("Insert your already tested gstreamer pipeline:")
-        dialog = gtk.Dialog("Add a Gstreamer pipeline",
+        label = Gtk.Label("Insert your already tested gstreamer pipeline:")
+        dialog = Gtk.Dialog("Add a Gstreamer pipeline",
                        None,
-                       gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-                       (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT,
-                        gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+                       Gtk.DIALOG_MODAL | Gtk.DIALOG_DESTROY_WITH_PARENT,
+                       (Gtk.STOCK_CANCEL, Gtk.RESPONSE_REJECT,
+                        Gtk.STOCK_OK, Gtk.RESPONSE_ACCEPT))
         dialog.vbox.pack_start(label)
         label.show()
-        entry = gtk.Entry()
+        entry = Gtk.Entry()
         dialog.vbox.pack_start(entry)
         entry.show()
         response = dialog.run()
@@ -187,22 +188,22 @@ class StreamStudio(GuiMixin):
                 dialog.destroy()
  
     def open(self):
-        fs = gtk.FileChooserDialog("Choose a file with pipelines",None,
-                        gtk.FILE_CHOOSER_ACTION_OPEN,
-                        (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                        gtk.STOCK_OPEN, gtk.RESPONSE_OK))
-        fs.set_default_response(gtk.RESPONSE_OK)
-        filter = gtk.FileFilter()
+        fs = Gtk.FileChooserDialog("Choose a file with pipelines",None,
+                        Gtk.FILE_CHOOSER_ACTION_OPEN,
+                        (Gtk.STOCK_CANCEL, Gtk.RESPONSE_CANCEL,
+                                        Gtk.STOCK_OPEN, Gtk.RESPONSE_OK))
+        fs.set_default_response(Gtk.RESPONSE_OK)
+        filter = Gtk.FileFilter()
         filter.set_name("StreamStudio files")
         filter.add_pattern("*.streamstudio")
         fs.add_filter(filter)
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name("All files")
         filter.add_pattern("*")
         fs.add_filter(filter)
         #fs.set_current_folder("$HOME/.streamstudio")
         response = fs.run()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.RESPONSE_OK:
             filename=fs.get_filename()
             if not filename.split(".")[-1] == "streamstudio":
                 filename += ".streamstudio"
@@ -216,38 +217,38 @@ class StreamStudio(GuiMixin):
                     self._alert_message("(%s) pipeline already active" % pipeline)
             f.close()
 
-        elif response == gtk.RESPONSE_CANCEL:
+        elif response == Gtk.RESPONSE_CANCEL:
               self._alert_message('pipelines\' configuration file opening aborted')
         fs.destroy()
 
     def save(self):
         if not len(self.pipelines):
-            dialog = gtk.MessageDialog(self,
-                (gtk.DIALOG_MODAL |
-                    gtk.DIALOG_DESTROY_WITH_PARENT),
-                    gtk.MESSAGE_INFO, gtk.BUTTONS_OK,
+            dialog = Gtk.MessageDialog(self,
+                (Gtk.DIALOG_MODAL |
+                    Gtk.DIALOG_DESTROY_WITH_PARENT),
+                    Gtk.MESSAGE_INFO, Gtk.BUTTONS_OK,
                                    "Choose at least one webcam or add a gstreamer pipeline before saving!")
             dialog.run()
             dialog.destroy()
             return
 
-        fs = gtk.FileChooserDialog("Choose a file to save active pipelines",None,
-                        gtk.FILE_CHOOSER_ACTION_SAVE,
-                        (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
-                                        gtk.STOCK_SAVE, gtk.RESPONSE_OK))
-        fs.set_default_response(gtk.RESPONSE_OK)
-        filter = gtk.FileFilter()
+        fs = Gtk.FileChooserDialog("Choose a file to save active pipelines",None,
+                        Gtk.FILE_CHOOSER_ACTION_SAVE,
+                        (Gtk.STOCK_CANCEL, Gtk.RESPONSE_CANCEL,
+                                        Gtk.STOCK_SAVE, Gtk.RESPONSE_OK))
+        fs.set_default_response(Gtk.RESPONSE_OK)
+        filter = Gtk.FileFilter()
         filter.set_name("StreamStudio files")
         filter.add_pattern("*.streamstudio")
         fs.add_filter(filter)
-        filter = gtk.FileFilter()
+        filter = Gtk.FileFilter()
         filter.set_name("All files")
         filter.add_pattern("*")
         fs.add_filter(filter)
         #fs.set_current_folder("$HOME/.streamstudio")
         fs.set_do_overwrite_confirmation(True)
         response = fs.run()
-        if response == gtk.RESPONSE_OK:
+        if response == Gtk.RESPONSE_OK:
             filename=fs.get_filename()
             #BUG PRESENT HERE: if you write an existing filename without extension
             #it overwrites file without asking confirmation
@@ -258,16 +259,16 @@ class StreamStudio(GuiMixin):
                 for pipeline in self.pipelines:
                     f.writelines(pipeline+"\n")
                 f.close()
-            elif response == gtk.RESPONSE_CANCEL:
+            elif response == Gtk.RESPONSE_CANCEL:
                 self._alert_message('pipelines\' saving aborted')
             fs.destroy()
 
     def about(self):
-        dialog = gtk.MessageDialog(self,
-            (gtk.DIALOG_MODAL |
-            gtk.DIALOG_DESTROY_WITH_PARENT),
-            gtk.MESSAGE_INFO,
-            gtk.BUTTONS_OK,
+        dialog = Gtk.MessageDialog(self,
+            (Gtk.DIALOG_MODAL |
+            Gtk.DIALOG_DESTROY_WITH_PARENT),
+            Gtk.MESSAGE_INFO,
+            Gtk.BUTTONS_OK,
             "We are trying to build a studio for lots of video/audio input who generate a virtual webcam as output"
         )
         dialog.run()
@@ -282,6 +283,8 @@ def usage(progname):
     """ % progname
 
 if __name__ == '__main__':
+    GObject.threads_init()
+    Gdk.threads_init()
     a = StreamStudio(sys.argv[1:])
     a.show_all()
     Gtk.main()

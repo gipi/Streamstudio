@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Main class to manage gstreamer pipeline construction.
 
@@ -9,11 +10,13 @@ Sources can be also added at runtime.
 
 All of this can be executed from a python terminal like the following session
 
-    >>> p = Pipeline(["/dev/video0", "/dev/video1"])
+    >>> p = Pipeline()
     >>> gobject.threads_init()
     >>> p.play()
+    >>> p.add_source('/dev/video0')
+    >>> p.add_source('/dev/video1')
 
-(gobject.threads_init() is mandatory otherwise a segfault will happen).
+(GObject.threads_init() is mandatory otherwise a segfault will happen).
 
 After this three little windows pop up; you can switch between them using the switch_to() function
 
@@ -31,6 +34,9 @@ The Pipeline class has two signals associated with it
 import os
 from sslog import logger
 from gi.repository import Gst, GObject
+
+import gi
+gi.require_version('Gst', '1.0')
 
 import platform; print 'python', platform.python_version()
 print Gst.version_string()
@@ -52,18 +58,18 @@ class Pipeline(GObject.GObject):
             (GObject.TYPE_OBJECT,)
         )
     }
-    def __init__(self, videodevicepaths, main_monitor_name="main_monitor", xsink_cb=None):
+    def __init__(self, main_monitor_name="main_monitor", xsink_cb=None):
         """Initialize the Pipeline with the given device paths
         and with the windows to which will be played.
 
         If xsink_cb is passed then will be used instead of the 'set-sink' signal
         in order to set the prepare-xwindow-id
         """
-        Gst.init_check(None)
+        import sys
+        Gst.init_check(sys.argv)
         GObject.GObject.__init__(self)
 
-
-        self.videodevicepaths = videodevicepaths
+        self.videodevicepaths = []
         self.main_monitor_name = main_monitor_name
         self.xsink_cb = xsink_cb
 
@@ -103,16 +109,9 @@ class Pipeline(GObject.GObject):
         where each video device has a tee that sends the stream to an autovideosink (that
         will be the monitor) and to an input-selector
         """
-        pipes = []
-        pipes.append("videotestsrc ! tee name=t%d ! queue ! s.sink%d t%d. ! queue ! xvimagesink name=fakesrc" % (
-            self.source_counter,
-            self.source_counter,
-            self.source_counter,
-        ))
-
         self._add_source("fake")
 
-        return " ".join(pipes) + " input-selector name=s ! queue ! xvimagesink name=%s" % self.main_monitor_name
+        return 'videotestsrc ! video/x-raw,framerate=1/5 ! queue ! tee name=t0 ! input-selector name=s ! queue ! xvimagesink name=main_monitor sync=false s.sink0 t0. ! xvimagesink name=fakesrc sync=false'
 
     def _setup_pipeline(self):
         """Launch the pipeline and connect bus to the right signals"""
@@ -143,10 +142,10 @@ class Pipeline(GObject.GObject):
         If to the constructor was passed the 'xsink_cb' then it will be called.
         """
         def on_sync_message(bus, message):
-            if message.structure is None:
+            if message.get_structure() is None:
                 return
-            message_name = message.structure.get_name()
-            if message_name == "prepare-xwindow-id":
+            message_name = message.get_structure().get_name()
+            if message_name == "prepare-window-handle":
                 imagesink = message.src
                 devicepath = None
                 # find out which device sends the message
@@ -164,9 +163,9 @@ class Pipeline(GObject.GObject):
     def __cb_factory(self):
         def _cb(bus, message):
             t = message.type
-            if t == Gst.MESSAGE_EOS:
+            if t == Gst.MessageType.EOS:
                 self.player.set_state(Gst.State.NULL)
-            elif t == Gst.MESSAGE_ERROR:
+            elif t == Gst.MessageType.ERROR:
                 # TODO: remove element if is a source
                 #and retry to restart the pipeline
                 err, debug = message.parse_error()
@@ -194,23 +193,18 @@ class Pipeline(GObject.GObject):
             logger.exception(e)
             raise AttributeError("source '%s' doesn't exist, add it before to launch this" % (devicepath,))
 
-        padname = 'sink%d' % source_n
+        padname = 'sink_%d' % source_n
         logger.debug('switch to ' + padname)
         switch = self.player.get_by_name('s')
-        stop_time = switch.emit('block')
         newpad = switch.get_static_pad(padname)
         start_time = newpad.get_property('running-time')
 
-        Gst.warning('stop time = %d' % (stop_time,))
-        Gst.warning('stop time = %s' % (Gst.TIME_ARGS(stop_time),))
 
-        Gst.warning('start time = %d' % (start_time,))
-        Gst.warning('start time = %s' % (Gst.TIME_ARGS(start_time),))
 
-        Gst.warning('switching from %r to %r'
+        logger.info('switching from %r to %r'
                     % (switch.get_property('active-pad'), padname))
-        switch.emit('switch', newpad, stop_time, start_time)
 
+        switch.set_property("active-pad", newpad)
     def add_source(self, devicepath):
         """Add a source to this pipeline and connect to the
         input-selector.
@@ -230,6 +224,8 @@ class Pipeline(GObject.GObject):
         video_source.set_property("name", devicepath)
 
         imagesink = Gst.ElementFactory.make("xvimagesink", None)
+        # sink=False otherwise all is hanging
+        imagesink.set_property("sync", False)
 
         queue2 = Gst.ElementFactory.make("queue", None)
         queue3 = Gst.ElementFactory.make("queue", None)
@@ -252,7 +248,7 @@ class Pipeline(GObject.GObject):
 
         # set the sink to the last value free in source_counter
         # otherwise input-selector reuse them
-        queue2.link_pads(None, self.input_selector, 'sink%d' % self.source_counter)
+        queue2.link_pads(None, self.input_selector, 'sink_%d' % self.source_counter)
         # finally link a src of the tee to the imagesink
         tee.link(queue3)
         queue3.link(imagesink)
@@ -307,7 +303,7 @@ class Pipeline(GObject.GObject):
         logger.debug('will be removed %s' % elements_to_remove)
         for element in elements_to_remove:
             # STATE_NULL allow to garbage collect the element
-            element.set_state(gst.STATE_NULL)
+            element.set_state(Gst.STATE_NULL)
             self.player.remove(element)
 
         self.sources.pop(devicepath)
@@ -315,10 +311,52 @@ class Pipeline(GObject.GObject):
 
         self.player.set_state(Gst.State.PLAYING)
 
+import cmd
+
+class PipelineShell(cmd.Cmd):
+    def __init__(self):
+        cmd.Cmd.__init__(self)
+        self.prompt = "\033[1;31mstreamstudio> \033[0m"
+        self.p = Pipeline()
+        GObject.threads_init()
+        #l = GObject.MainLoop()
+        #l.run()
+
+    def do_EOF(self, line):
+        return True
+
+    def emptyline(self):
+        return ''
+
+    def do_add(self, line):
+        """Add a source"""
+        if line == "":
+            return
+
+        try:
+            self.p.add_source(line)
+        except AttributeError as e:
+            print e.message
+
+    def do_remove(self, line):
+        """Remove a source, pass a device path as argument"""
+        if line == "":
+            return
+
+        try:
+            self.p.remove_source(line)
+        except AttributeError as e:
+            print e.message
+
+    def do_play(self, line):
+        self.p.play()
+
+    def do_switch(self, line):
+        try:
+            self.p.switch_to(line)
+        except AttributeError as e:
+            print e.message
+
 
 if __name__ == "__main__":
-    import sys
-    p = Pipeline([])
-    for source in sys.argv[1:]:
-        p.add_source(source)
-    p.play()
+    PipelineShell().cmdloop()
