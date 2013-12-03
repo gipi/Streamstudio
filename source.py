@@ -14,28 +14,48 @@ import sys
 import gi
 gi.require_version('Gst', '1.0')
 
+Gst.init(None)
+
 
 class Source(object):
     def __init__(self, path):
+        """Initialize the object using the gstdiscover module.
+
+        Documentation at <http://gstreamer.freedesktop.org/data/doc/gstreamer/head/gst-plugins-base-libs/html/gst-plugins-base-libs-gstdiscoverer.html>
+        """
         self.path = path
+        discoverer = GstPbutils.Discoverer()
+
+        self.info = discoverer.discover_uri(self.path)
+
+        self.audio = self.info.get_audio_streams()
+        self.video = self.info.get_video_streams()
+
+    def get_audio_mimetypes(self):
+        """Get a list with the audio mimetypes available"""
+        return [x.get_caps().to_string().split(',')[0] for x in self.audio]
+
+    def get_video_mimetypes(self):
+        """Get a list with the video mimetypes available"""
+        return [x.get_caps().to_string().split(',')[0] for x in self.video]
+
+    def get_audio_mimetype(self):
+        return self.audio.split(',')[0]
+
+    def __unicode__(self):
+        audio_mt = ','.join(self.get_audio_mimetypes())
+        video_mt = ','.join(self.get_video_mimetypes())
+        return '%s %s%s%s' % (
+            self.path,
+            'audio:%s' % audio_mt if audio_mt != "" else "",
+            " " if (audio_mt != "" and video_mt != "") else "",
+            'video:%s' % video_mt if video_mt != "" else "",
+        )
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print >> sys.stderr, "usage %s <filename>" % sys.argv[0]
         sys.exit(1)
 
-    Gst.init(None)
-    GObject.threads_init()
-    #discover(sys.argv[1])
-    discoverer = GstPbutils.Discoverer()
-    info = discoverer.discover_uri(sys.argv[1])
-
-    # video info
-    print '# video'
-    for vinfo in info.get_video_streams():
-        print vinfo.get_caps().to_string().replace(', ', '\n\t')
-
-    # audio info
-    print '# audio'
-    for ainfo in info.get_audio_streams():
-        print ainfo.get_caps().to_string().replace(', ', '\n\t')
+    s = Source(sys.argv[1])
+    print unicode(s)
