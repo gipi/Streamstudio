@@ -205,6 +205,39 @@ class Pipeline(GObject.GObject):
                     % (switch.get_property('active-pad'), padname))
 
         switch.set_property("active-pad", newpad)
+
+    def _add_video_branch_to_pipeline(self, src, sink):
+        queue2 = Gst.ElementFactory.make("queue", None)
+        queue3 = Gst.ElementFactory.make("queue", None)
+
+        tee = Gst.ElementFactory.make("tee", "t%d" % self.source_counter)
+
+        # stop the pipeline
+        self.player.set_state(Gst.State.PAUSED)
+
+        # add the elements to the pipeline
+        self.player.add(src)
+        self.player.add(queue2)
+        self.player.add(queue3)
+        self.player.add(sink)
+        self.player.add(tee)
+
+        # link them correctly to the first free sink of the input-selector
+        src.link(tee)
+        tee.link(queue2)
+
+        # set the sink to the last value free in source_counter
+        # otherwise input-selector reuse them
+        queue2.link_pads(None, self.input_selector, 'sink_%d' % self.source_counter)
+        # finally link a src of the tee to the imagesink
+        tee.link(queue3)
+        queue3.link(sink)
+
+        # restart the pipeline
+        self.player.set_state(Gst.State.PLAYING)
+
+        return [queue2, queue3, tee, sink]
+
     def add_source(self, devicepath):
         """Add a source to this pipeline and connect to the
         input-selector.
@@ -216,8 +249,10 @@ class Pipeline(GObject.GObject):
             os.stat(devicepath)
         except OSError:
             raise AttributeError("source '%s' doesn't exist" % devicepath)
+
         if devicepath in self.videodevicepaths:
             raise AttributeError("device '%s' is yet a source" % devicepath)
+
         # first create all the elements
         video_source = Gst.ElementFactory.make("v4l2src", None)
         video_source.set_property("device", devicepath)
@@ -227,45 +262,12 @@ class Pipeline(GObject.GObject):
         # sink=False otherwise all is hanging
         imagesink.set_property("sync", False)
 
-        queue2 = Gst.ElementFactory.make("queue", None)
-        queue3 = Gst.ElementFactory.make("queue", None)
-
-        tee = Gst.ElementFactory.make("tee", "t%d" % self.source_counter)
-
-        # stop the pipeline
-        self.player.set_state(Gst.State.PAUSED)
-
-        # add the elements to the pipeline
-        self.player.add(video_source)
-        self.player.add(queue2)
-        self.player.add(queue3)
-        self.player.add(imagesink)
-        self.player.add(tee)
-
-        # link them correctly to the first free sink of the input-selector
-        video_source.link(tee)
-        tee.link(queue2)
-
-        # set the sink to the last value free in source_counter
-        # otherwise input-selector reuse them
-        queue2.link_pads(None, self.input_selector, 'sink_%d' % self.source_counter)
-        # finally link a src of the tee to the imagesink
-        tee.link(queue3)
-        queue3.link(imagesink)
-
-        # restart the pipeline
-        self.player.set_state(Gst.State.PLAYING)
+        elements_added = self._add_video_branch_to_pipeline(video_source, imagesink)
 
         # update the number of sources
         self.videodevicepaths.append(devicepath)
         # update the sources
-        self._add_source(
-            devicepath, [
-                queue2,
-                queue3,
-                tee,
-                imagesink
-            ])
+        self._add_source(devicepath, elements_added)
 
     def remove_source(self, devicepath):
         """Remove a source by name"""
