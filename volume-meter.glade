@@ -2,6 +2,7 @@
 <interface>
   <!-- interface-requires gtk+ 3.0 -->
   <object class="GtkWindow" id="mainWindow">
+    <signal name="destroy" handler="_on_action_quit" swapped="no"/>
     <property name="can_focus">False</property>
     <child>
       <object class="GtkVBox" id="box1">
@@ -13,13 +14,15 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkProgressBar" id="progressbar">
+              <object class="GtkLevelBar" id="progressbar">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="fraction">0.17000000000000001</property>
+                <property name="max-value">100.0</property>
+                <property name="min-value">0.0</property>
+                <property name="value">50.0</property>
               </object>
               <packing>
-                <property name="expand">False</property>
+                <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
