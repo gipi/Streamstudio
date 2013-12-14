@@ -35,6 +35,11 @@ import os
 from sslog import logger
 from gi.repository import Gst, GObject
 
+print 'GObject v%s' % GObject._version
+print 'PyGObject v%s' % (
+    '.'.join([str(x) for x in GObject.pygobject_version]),
+)
+
 import gi
 gi.require_version('Gst', '1.0')
 
