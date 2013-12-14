@@ -6,10 +6,12 @@ adapted for version 1.0 of GStreamer.
 
 from gi.repository import GObject, Gst
 import sys
+from sslog import logger
 
 GObject.threads_init()
 g_main_loop = GObject.MainLoop()
 Gst.init(None)
+
 
 class Main:
     def __init__(self, location):
@@ -42,7 +44,9 @@ class Main:
 
         def __on_message(bus, message):
             t = message.type
-            print t
+            logger.info('received message type \'%s\' from \'%s\'' % (
+                t.first_value_nick, message.src.get_name(),
+            ))
             if t == Gst.MessageType.EOS:
                 self.player.set_state(Gst.State.NULL)
             elif t == Gst.MessageType.ERROR:
