@@ -81,6 +81,7 @@ class Pipeline(GObject.GObject):
         # this will maintain an unique identifier for the input-selector sink
         # since we want to add/remove the number must be unique so increment only
         self.source_counter = 0
+        self.source_counter_audio = 0
         self.demux_counter = 0
         # self.sources has a key the video device paths and as value another dictionary
         # indicating with the key 'sink' the id of the sink corresponding to the
@@ -103,6 +104,7 @@ class Pipeline(GObject.GObject):
         }
 
         self.source_counter += 1
+        self.source_counter_audio += 1
 
     def _build_pipeline_string(self):
         """The final pipeline is in the form like
@@ -114,10 +116,16 @@ class Pipeline(GObject.GObject):
 
         where each video device has a tee that sends the stream to an autovideosink (that
         will be the monitor) and to an input-selector
+
+        Also an audio pipeline is added
+
+        audiotestsrc wave=8 ! tee name=ta0 ! queue ! sa.sink0
+         ...
+        input-selector name=sa ! autoaudiosink
         """
         self._add_source("fake")
 
-        return 'videotestsrc ! video/x-raw,framerate=1/5 ! queue ! tee name=t0 ! input-selector name=s ! queue ! xvimagesink name=main_monitor sync=false s.sink0 t0. ! xvimagesink name=fakesrc sync=false'
+        return 'videotestsrc ! video/x-raw,framerate=1/5 ! queue ! tee name=t0 ! input-selector name=s ! queue ! xvimagesink name=main_monitor sync=false t0. ! xvimagesink name=fakesrc sync=false audiotestsrc wave=8 ! queue ! tee name=ta0 ! input-selector name=sa ! queue ! autoaudiosink'
 
     def _setup_pipeline(self):
         """Launch the pipeline and connect bus to the right signals"""
@@ -132,6 +140,7 @@ class Pipeline(GObject.GObject):
         bus.connect('message', self.__cb_factory())
 
         self.input_selector = self.player.get_by_name('s')
+        self.input_selector_audio = self.player.get_by_name('sa')
         # TODO: create the videotestsrc piece of pipeline programmatically
         #       so to have special cases
         self.sources["fake"]["elements"] = [self.player.get_by_name("fakesrc"),]
@@ -211,6 +220,15 @@ class Pipeline(GObject.GObject):
                     % (switch.get_property('active-pad'), padname))
 
         switch.set_property("active-pad", newpad)
+
+    def _add_audio_branch_to_pipeline(self, src, sink):
+        self.source_counter_audio += 1
+        return self._add_branch_to_pipeline(
+            self.input_selector_audio,
+            src,
+            sink,
+            "ta%d" % self.source_counter_audio,
+            'sink_%d' % self.source_counter_audio)
 
     def _add_video_pad_to_pipeline(self, src_pad):
         imagesink = Gst.ElementFactory.make("xvimagesink", None)
