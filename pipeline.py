@@ -47,9 +47,9 @@ import platform; print 'python', platform.python_version()
 print Gst.version_string()
 
 
-class Pipeline(GObject.GObject):
-    """Main class for multimedia handling.
-    """
+
+class BasePipeline(GObject.GObject):
+    """Base class to manage GStreamer pipelines"""
     __gsignals__ = {
         'error': (
             GObject.SIGNAL_RUN_LAST,
@@ -63,6 +63,102 @@ class Pipeline(GObject.GObject):
             (GObject.TYPE_OBJECT,)
         )
     }
+    def __init__(self, pipeline_string):
+        import sys
+        Gst.init_check(sys.argv)
+        GObject.GObject.__init__(self)
+
+        self.pipeline_string = pipeline_string
+
+        self._setup_pipeline()
+
+    def _setup_pipeline(self):
+        """Launch the pipeline and connect bus to the right signals"""
+        logger.debug(self.pipeline_string)
+        self.player = Gst.parse_launch(self.pipeline_string)
+        bus = self.player.get_bus()
+        bus.enable_sync_message_emission()
+        bus.add_signal_watch()
+
+        bus.connect('sync-message::element', self.__cb_on_sync())
+        bus.connect('message', self.__cb_factory())
+
+    def _on_message_error(self, message):
+        # TODO: remove element if is a source
+        #and retry to restart the pipeline
+        err, debug = message.parse_error()
+        logger.error("fatal from '%s'" % message.src.get_name())
+        logger.error("%s:%s" % (err, debug))
+
+        self.emit("error", err)
+
+        self.remove_source(message.src.get_name())
+
+    def _on_message_prepare_window_handle(self, message):
+        imagesink = message.src
+        devicepath = None
+        # find out which device sends the message
+        for dpath, value in self.sources.iteritems():
+            if value['elements'] and imagesink in value['elements']:
+                devicepath = dpath
+                break
+
+        if self.xsink_cb:
+            self.xsink_cb(imagesink, devicepath)
+        self.emit("set-sink", imagesink)
+
+    def __cb_on_sync(self):
+        """When an "on sync" message is emitted check if is
+        a "prepare-xwindow-id" and if so assign the viewport
+        to the correct autovideosink.
+
+        Internally the name of the message's src attribute will be
+        like "<name>-actual-sink-xvimage" where <name> is like autovideosink0
+        for the default.
+
+        If to the constructor was passed the 'xsink_cb' then it will be called.
+        """
+        def on_sync_message(bus, message):
+            t = message.type
+            if message.get_structure() is None:
+                return
+
+            message_name = message.get_structure().get_name()
+
+            logger.debug('sync: received message type \'%s\' with name \'%s\' from \'%s\'' % (
+                t.first_value_nick, message_name, message.src.get_name(),
+            ))
+
+            if message_name == "prepare-window-handle":
+                self._on_message_prepare_window_handle(message)
+
+        return on_sync_message
+
+    def __cb_factory(self):
+        def _cb(bus, message):
+            t = message.type
+            logger.debug('received message type \'%s\' from \'%s\'' % (
+                t.first_value_nick, message.src.get_name(),
+            ))
+
+            if t == Gst.MessageType.EOS:
+                self.player.set_state(Gst.State.NULL)
+            elif t == Gst.MessageType.ERROR:
+                self._on_message_error(message)
+        return _cb
+
+    def play(self):
+        """Set the internal gstreamer pipeline to STATE_PLAYING"""
+        self.player.set_state(Gst.State.PLAYING)
+
+    def kill(self):
+        self.player.set_state(Gst.State.PAUSED)
+        self.player.set_state(Gst.State.NULL)
+
+
+class Pipeline(BasePipeline):
+    """Main class for multimedia handling.
+    """
     def __init__(self, main_monitor_name="main_monitor", xsink_cb=None):
         """Initialize the Pipeline with the given device paths
         and with the windows to which will be played.
@@ -70,9 +166,6 @@ class Pipeline(GObject.GObject):
         If xsink_cb is passed then will be used instead of the 'set-sink' signal
         in order to set the prepare-xwindow-id
         """
-        import sys
-        Gst.init_check(sys.argv)
-        GObject.GObject.__init__(self)
 
         self.videodevicepaths = []
         self.main_monitor_name = main_monitor_name
@@ -89,7 +182,7 @@ class Pipeline(GObject.GObject):
         # all the elements associated to this source.
         self.sources = {}
 
-        self._setup_pipeline()
+        super(Pipeline, self).__init__(self._build_pipeline_string())
 
     def _add_source(self, devicepath, elements=None):
         """Add the given source to the internal dictionary.
@@ -128,77 +221,13 @@ class Pipeline(GObject.GObject):
         return 'videotestsrc ! video/x-raw,framerate=1/5 ! queue ! tee name=t0 ! input-selector name=s ! queue ! xvimagesink name=main_monitor sync=false t0. ! xvimagesink name=fakesrc sync=false audiotestsrc wave=8 ! queue ! tee name=ta0 ! input-selector name=sa ! queue ! autoaudiosink'
 
     def _setup_pipeline(self):
-        """Launch the pipeline and connect bus to the right signals"""
-        self.pipeline_string = self._build_pipeline_string()
-        logger.debug(self.pipeline_string)
-        self.player = Gst.parse_launch(self.pipeline_string)
-        bus = self.player.get_bus()
-        bus.enable_sync_message_emission()
-        bus.add_signal_watch()
-
-        bus.connect('sync-message::element', self.__cb_on_sync())
-        bus.connect('message', self.__cb_factory())
+        super(Pipeline, self)._setup_pipeline()
 
         self.input_selector = self.player.get_by_name('s')
         self.input_selector_audio = self.player.get_by_name('sa')
         # TODO: create the videotestsrc piece of pipeline programmatically
         #       so to have special cases
         self.sources["fake"]["elements"] = [self.player.get_by_name("fakesrc"),]
-
-    def __cb_on_sync(self):
-        """When an "on sync" message is emitted check if is
-        a "prepare-xwindow-id" and if so assign the viewport
-        to the correct autovideosink.
-
-        Internally the name of the message's src attribute will be
-        like "<name>-actual-sink-xvimage" where <name> is like autovideosink0
-        for the default.
-
-        If to the constructor was passed the 'xsink_cb' then it will be called.
-        """
-        def on_sync_message(bus, message):
-            if message.get_structure() is None:
-                return
-            message_name = message.get_structure().get_name()
-            if message_name == "prepare-window-handle":
-                imagesink = message.src
-                devicepath = None
-                # find out which device sends the message
-                for dpath, value in self.sources.iteritems():
-                    if value['elements'] and imagesink in value['elements']:
-                        devicepath = dpath
-                        break
-
-                if self.xsink_cb:
-                    self.xsink_cb(imagesink, devicepath)
-                self.emit("set-sink", imagesink)
-
-        return on_sync_message
-
-    def __cb_factory(self):
-        def _cb(bus, message):
-            t = message.type
-            if t == Gst.MessageType.EOS:
-                self.player.set_state(Gst.State.NULL)
-            elif t == Gst.MessageType.ERROR:
-                # TODO: remove element if is a source
-                #and retry to restart the pipeline
-                err, debug = message.parse_error()
-                logger.error("fatal from '%s'" % message.src.get_name())
-                logger.error("%s:%s" % (err, debug))
-
-                self.emit("error", err)
-
-                self.remove_source(message.src.get_name())
-        return _cb
-
-    def play(self):
-        """Set the internal gstreamer pipeline to STATE_PLAYING"""
-        self.player.set_state(Gst.State.PLAYING)
-
-    def kill(self):
-        self.player.set_state(Gst.State.PAUSED)
-        self.player.set_state(Gst.State.NULL)
 
     def switch_to(self, devicepath):
         """Select the device path passed as argument as source for the output"""
