@@ -21,6 +21,14 @@ In order to make this program runs you need
 This program use the PyGOBject introspection <https://live.gnome.org/PyGObject>
 in order to be able to use directly the C APIs.
 
+If you are interested in more details about introspection look at this page
+
+  https://wiki.gnome.org/Projects/PyGObject/IntrospectionPorting
+
+The documentation for the PyGTK3 code can be found at the following page
+
+  https://python-gtk-3-tutorial.readthedocs.org/en/latest/index.html
+
 In some distributions there isn't available yet gstreamer1.0, if you want
 to use this application, you can use the gstreamer-repo available to the
 github repository present at the address
