@@ -4,10 +4,11 @@ Original code from <http://www.jonobacon.org/2006/11/03/gstreamer-dynamic-pads-e
 adapted for version 1.0 of GStreamer.
 """
 
-from gi.repository import GObject, Gst, Gtk
+from gi.repository import GObject, Gst
 import sys
 
 GObject.threads_init()
+g_main_loop = GObject.MainLoop()
 Gst.init(None)
 
 class Main:
@@ -32,7 +33,7 @@ class Main:
 
         self.convert.link(self.sink)
 
-        self.videosink = Gst.ElementFactory.make("xvimagesink", "imagesink")
+        self.videosink = Gst.ElementFactory.make("autovideosink", "imagesink")
         self.pipeline.add(self.videosink)
 
         self.bus = self.pipeline.get_bus()
@@ -47,7 +48,7 @@ class Main:
             elif t == Gst.MessageType.ERROR:
                 err, debug = message.parse_error()
                 print err, debug
-                Gtk.main_quit()
+                g_main_loop.quit()
 
         self.bus.connect('message', __on_message)
 
@@ -63,4 +64,4 @@ class Main:
 
 
 start=Main(sys.argv[1])
-Gtk.main()
+g_main_loop.run()
