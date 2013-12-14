@@ -1,5 +1,7 @@
 from sslog import logger
-from gi.repository import Gtk, GObject, GdkX11, GstVideo, Gdk
+from gi.repository import Gtk, GObject, Gdk
+
+
 
 
 class VideoInput(Gtk.Window):
@@ -176,6 +178,8 @@ class VideoInput(Gtk.Window):
 
 
 if __name__ == '__main__':
+    GObject.threads_init()
+    Gdk.threads_init()
     b = VideoInput()
     b.set_label("Test on /dev/video0")
     Gtk.main()

@@ -472,4 +472,6 @@ class PipelineShell(cmd.Cmd):
 
 
 if __name__ == "__main__":
+    GObject.threads_init()
+    Gst.init(None)
     PipelineShell().cmdloop()
