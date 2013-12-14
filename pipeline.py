@@ -81,6 +81,7 @@ class Pipeline(GObject.GObject):
         # this will maintain an unique identifier for the input-selector sink
         # since we want to add/remove the number must be unique so increment only
         self.source_counter = 0
+        self.demux_counter = 0
         # self.sources has a key the video device paths and as value another dictionary
         # indicating with the key 'sink' the id of the sink corresponding to the
         # input-selector's sink associated. Also an 'element' key is present, it contains
@@ -211,6 +212,18 @@ class Pipeline(GObject.GObject):
 
         switch.set_property("active-pad", newpad)
 
+    def _add_video_pad_to_pipeline(self, src_pad):
+        imagesink = Gst.ElementFactory.make("xvimagesink", None)
+        # sink=False otherwise all is hanging
+        imagesink.set_property("sync", False)
+
+        return self._connect_pad_to_pipeline(
+            self.input_selector,
+            src_pad,
+            imagesink,
+            "t%d" % self.source_counter,
+            'sink_%d' % self.source_counter)
+
     def _add_video_branch_to_pipeline(self, src):
         imagesink = Gst.ElementFactory.make("xvimagesink", None)
         # sink=False otherwise all is hanging
@@ -323,6 +336,41 @@ class Pipeline(GObject.GObject):
         # update the sources
         self._add_source(devicepath, elements_added)
 
+    def add_source_file(self, location):
+        """Try to add as source a given file at location passed as argument.
+
+        Since it uses the decodebin element, the pad adding is asynchronous.
+        """
+        self._check_source(location)
+
+        filesrc = Gst.ElementFactory.make('filesrc', None)
+        filesrc.set_property('location', location)
+
+        decodebin_name = 'demux%d' % self.demux_counter
+        decodebin = Gst.ElementFactory.make('decodebin', decodebin_name)
+
+        self.player.set_state(Gst.State.PAUSED)
+
+        self.player.add(decodebin)
+        self.player.add(filesrc)
+
+        filesrc.link(decodebin)
+
+        def on_pad_added(element, pad):
+            caps = pad.get_current_caps().to_string()
+            logger.info('pad \'%s\',  with caps \'%s\', added from element \'%s\'' % (
+                pad.get_name(), caps, element.get_name(),
+            ))
+            if caps.startswith('video'):
+                elements_added = self._add_video_pad_to_pipeline(pad)
+                self._add_source(location, elements_added)
+
+        decodebin.connect('pad-added', on_pad_added)
+
+        self.player.set_state(Gst.State.PLAYING)
+
+        self.demux_counter += 1
+
     def remove_source(self, devicepath):
         """Remove a source by name"""
         if devicepath not in self.videodevicepaths:
@@ -391,6 +439,15 @@ class PipelineShell(cmd.Cmd):
 
         try:
             self.p.add_source_device(line)
+        except AttributeError as e:
+            print e.message
+
+    def do_add_file(self, line):
+        if line == '':
+            return
+
+        try:
+            self.p.add_source_file(line)
         except AttributeError as e:
             print e.message
 
