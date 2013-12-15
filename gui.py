@@ -29,6 +29,9 @@ class GuiMixin(object):
     def _get_ui_element_by_name(self, name):
         return self.builder.get_object(name)
 
+    def _get_main_class(self):
+        return self._get_ui_element_by_name(self.main_class)
+
     def show_all(self):
         assert self.main_class, "The class has not defined 'main_class' value."
-        self._get_ui_element_by_name(self.main_class).show_all()
+        self._get_main_class().show_all()
