@@ -44,9 +44,6 @@ class VideoInput(Gtk.Window):
         self.ui_string = """
         <ui>
             <toolbar name='Toolbar'>
-                <toolitem action='Play'/>
-                <toolitem action='Pause'/>
-                <toolitem action='Rec'/>
                 <toolitem action='Active'/>
                 <separator/>
                 <toolitem action='Remove'/>
@@ -109,12 +106,6 @@ class VideoInput(Gtk.Window):
     def _create_ui(self):
         ag = Gtk.ActionGroup('AppActions')
         actions = [
-            ('Play',     Gtk.STOCK_MEDIA_PLAY, '_Play', '',
-             'Playing this video input', self._on_action_play),
-            ('Pause',     Gtk.STOCK_MEDIA_PAUSE, '_Pause', '',
-             'Pause playing this video input', self._on_action_pause),
-            ('Rec',     Gtk.STOCK_MEDIA_RECORD, '_Rec', '',
-             'Record this video input', self._on_action_rec),
             ('Remove',     Gtk.STOCK_QUIT, '_Remove', '',
              'Remove this video input', self._on_action_remove),
             ('Active',     Gtk.STOCK_OK, '_Active', '',
@@ -143,14 +134,6 @@ class VideoInput(Gtk.Window):
         self.imagesink.set_property("force-aspect-ratio", True)
         self.imagesink.set_window_handle(xid)
 
-    def _on_action_play(self, action):
-        self.play()
-
-    def _on_action_pause(self, action):
-        self.pause()
-
-    def _on_action_rec(self, action):
-        self.rec()
 
     def _on_action_remove(self, action):
         self.remove()
@@ -161,15 +144,6 @@ class VideoInput(Gtk.Window):
         to be activated.
         """
         self.emit('monitor-activated')
-
-    def play(self):
-        raise NotImplementedError
-
-    def pause(self):
-        raise NotImplementedError
-
-    def rec(self):
-        raise NotImplementedError
 
     def remove(self):
         # TODO: remove itself or emit only the signals?
