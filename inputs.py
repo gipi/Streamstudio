@@ -12,7 +12,6 @@ class VideoInput(Gtk.Window):
     import inputs
     (...)
     viewer = inputs.VideoInput() 
-    viewer.set_pipeline(pipeline)
     childWidget = viewer.main_vbox
     childWidget.reparent(self.main_vbox)
     childWidget.show_all()
