@@ -134,6 +134,10 @@ class BasePipeline(GObject.GObject):
 
             if t == Gst.MessageType.EOS:
                 self.player.set_state(Gst.State.NULL)
+            elif t == Gst.MessageType.WARNING:
+                logger.debug(' %s' % (message.parse_warning(),))
+            elif t == Gst.MessageType.QOS:
+                logger.debug(' %s' % (message.parse_qos(),))
             elif t == Gst.MessageType.ERROR:
                 self._on_message_error(message)
         return _cb
