@@ -1,6 +1,8 @@
 from sslog import logger
-from gi.repository import Gtk, GObject, Gdk
-
+# GstVideo and GdkX11 are necessary to avoid these bugs
+# <https://bugzilla.gnome.org/show_bug.cgi?id=673396>
+from gi.repository import Gtk, GObject, Gdk, Gst, GstVideo, GdkX11
+from pipeline import BasePipeline
 
 
 
@@ -127,13 +129,19 @@ class VideoInput(Gtk.Window):
         return self.label
 
     def set_sink(self, sink):
-        xid = self.da.get_property('window').get_xid()
-        assert xid
-        self.imagesink = sink
-        #Gdk.display_get_default().sync()
-        self.imagesink.set_property("force-aspect-ratio", True)
-        self.imagesink.set_window_handle(xid)
-
+        Gdk.threads_enter()
+        logger.debug('try to set sink with \'%s\'' % (sink,))
+        try:
+            xid = self.da.get_property('window').get_xid()
+            assert xid
+            self.imagesink = sink
+            #Gdk.display_get_default().sync()
+            self.imagesink.set_property("force-aspect-ratio", True)
+            self.imagesink.set_window_handle(xid)
+        except Exception, e:
+            logger.exception(e)
+        finally:
+            Gdk.threads_leave()
 
     def _on_action_remove(self, action):
         self.remove()
