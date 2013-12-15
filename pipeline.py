@@ -96,15 +96,6 @@ class BasePipeline(GObject.GObject):
 
     def _on_message_prepare_window_handle(self, message):
         imagesink = message.src
-        devicepath = None
-        # find out which device sends the message
-        for dpath, value in self.sources.iteritems():
-            if value['elements'] and imagesink in value['elements']:
-                devicepath = dpath
-                break
-
-        if self.xsink_cb:
-            self.xsink_cb(imagesink, devicepath)
         self.emit("set-sink", imagesink)
 
     def __cb_on_sync(self):
@@ -228,6 +219,20 @@ class Pipeline(BasePipeline):
         # TODO: create the videotestsrc piece of pipeline programmatically
         #       so to have special cases
         self.sources["fake"]["elements"] = [self.player.get_by_name("fakesrc"),]
+
+    def _on_message_prepare_window_handle(self, message):
+        imagesink = message.src
+        devicepath = None
+        # find out which device sends the message
+        for dpath, value in self.sources.iteritems():
+            if value['elements'] and imagesink in value['elements']:
+                devicepath = dpath
+                break
+
+        if self.xsink_cb:
+            self.xsink_cb(imagesink, devicepath)
+
+        super(Pipeline, self)._on_message_prepare_window_handle(message)
 
     def switch_to(self, devicepath):
         """Select the device path passed as argument as source for the output"""
