@@ -3,10 +3,11 @@ from sslog import logger
 # <https://bugzilla.gnome.org/show_bug.cgi?id=673396>
 from gi.repository import Gtk, GObject, Gdk, Gst, GstVideo, GdkX11
 from pipeline import BasePipeline
+from gui import GuiMixin
 
 
 
-class VideoInput(Gtk.Window):
+class VideoInput(GObject.GObject, GuiMixin):
     '''This class create a viewers with its own toolbar and its own gtk.Window
     for a gstreamer video pipeline who could be imported in other windows 
     using reparenting:
@@ -35,98 +36,23 @@ class VideoInput(Gtk.Window):
         )
     }
 
+    main_class = 'vi_window'
+
     def __init__(self):
-        self.status="PAUSE"
-        self.label=""
-        Gtk.Window.__init__(self)
-        self.set_title(self.get_label())
-        self.connect('delete-event', self._on_delete_event)
-        self.set_position(Gtk.WindowPosition.CENTER)
-        self.set_size_request(200, 200)
-        self.ui_string = """
-        <ui>
-            <toolbar name='Toolbar'>
-                <toolitem action='Active'/>
-                <separator/>
-                <toolitem action='Remove'/>
-            </toolbar>
-        </ui>"""
-        uimgr = self._create_ui()
-        uimgr.connect('connect-proxy',
-                      self._on_uimanager__connect_proxy)
-        uimgr.connect('disconnect-proxy',
-                      self._on_uimanager__disconnect_proxy)
-        toolbar = uimgr.get_widget('/Toolbar')
-        label = Gtk.Label(self.get_label())
-        da = Gtk.DrawingArea()
-        vbox=Gtk.VBox()
-        vbox.pack_start(label, False, True, 0)
-        vbox.add(da)
-        vbox.pack_end(toolbar, False, True, 0)
-        self.main_vbox=vbox
-        self.da=da
-        self.add(vbox)
+        GObject.GObject.__init__(self)
+        self._build_gui()
 
-    def _on_uimanager__connect_proxy(self, uimgr, action, widget):
-        tooltip = action.get_property('tooltip')
-        if not tooltip:
-            return
+        self.da = self._get_ui_element_by_name('vi_drawingarea')
+        self.btn_activate = self._get_ui_element_by_name('btn_activate')
+        self.btn_remove = self._get_ui_element_by_name('btn_remove')
 
-        if isinstance(widget, Gtk.MenuItem):
-            cid = widget.connect('select', self._on_menu_item__select,
-                                 tooltip)
-            cid2 = widget.connect('deselect', self._on_menu_item__deselect)
-            widget.set_data('pygtk-app::proxy-signal-ids', (cid, cid2))
-        #elif isinstance(widget, gtk.ToolButton):
-            #cid = widget.child.connect('enter', self._on_tool_button__enter,
-            #                           tooltip)
-            #cid2 = widget.child.connect('leave', self._on_tool_button__leave)
-            #widget.set_data('pygtk-app::proxy-signal-ids', (cid, cid2))
+        self._get_main_class().connect('delete-event', self._on_delete_event)
 
-    def _on_uimanager__disconnect_proxy(self, uimgr, action, widget):
-        cids = widget.get_data('pygtk-app::proxy-signal-ids')
-        if not cids:
-            return
-
-        if isinstance(widget, Gtk.ToolButton):
-            widget = widget.child
-
-        for name, cid in cids:
-            widget.disconnect(cid)
-
-    #def _on_tool_button__enter(self, toolbutton, tooltip):
-    #    #self.statusbar.push(self._menu_cix, tooltip)
-    #	raise
-
-    #def _on_tool_button__leave(self, toolbutton):
-    #    #self.statusbar.pop(self._menu_cix)
-    #    raise
+        self.btn_activate.connect('clicked', self._on_action_active)
+        self.btn_remove.connect('clicked', self._on_action_remove)
 
     def _on_delete_event(self,window,event):
         Gtk.main_quit()
-
-    def _create_ui(self):
-        ag = Gtk.ActionGroup('AppActions')
-        actions = [
-            ('Remove',     Gtk.STOCK_QUIT, '_Remove', '',
-             'Remove this video input', self._on_action_remove),
-            ('Active',     Gtk.STOCK_OK, '_Active', '',
-             'Remove this video input', self._on_action_active),
-            ]
-        ag.add_actions(actions)
-        ui = Gtk.UIManager()
-        ui.insert_action_group(ag, 0)
-        ui.add_ui_from_string(self.ui_string)
-        self.add_accel_group(ui.get_accel_group())
-        return ui
-
-    def set_label(self,label):
-        self.label=label
-
-    def get_label(self):
-        if not self.label:
-            self.set_label("New video input")
-        return self.label
 
     def set_sink(self, sink):
         Gdk.threads_enter()
@@ -157,6 +83,13 @@ class VideoInput(Gtk.Window):
         # TODO: remove itself or emit only the signals?
         self.emit('removed', 100)
 
+class VideoSeekableInput(VideoInput, GuiMixin):
+    """Manage the GUI of a seekable input"""
+    main_class = 'window1'
+    def __init__(self):
+        super().__init__()
+        self._build_gui()
+
 
 if __name__ == '__main__':
     GObject.threads_init()
@@ -169,7 +102,6 @@ if __name__ == '__main__':
 
     # GUI
     b = VideoInput()
-    b.set_label(pipeline_string)
     b.show_all()
 
     def _cb_remove(*args):print 'remove called', args
