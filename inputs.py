@@ -83,12 +83,14 @@ class VideoInput(GObject.GObject, GuiMixin):
         # TODO: remove itself or emit only the signals?
         self.emit('removed', 100)
 
-class VideoSeekableInput(VideoInput, GuiMixin):
+class VideoSeekableInput(VideoInput):
     """Manage the GUI of a seekable input"""
     main_class = 'window1'
     def __init__(self):
-        super().__init__()
-        self._build_gui()
+        super(VideoSeekableInput, self).__init__()
+
+        # here is the instance of GtkAdjustement and not GtkScale
+        self.seeker = self._get_ui_element_by_name('vi_seek')
 
 
 if __name__ == '__main__':
