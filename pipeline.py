@@ -150,6 +150,12 @@ class BasePipeline(GObject.GObject):
         self.player.set_state(Gst.State.PAUSED)
         self.player.set_state(Gst.State.NULL)
 
+    def get_position(self):
+        return self.player.query_position(Gst.Format.TIME)[1]
+
+    def get_duration(self):
+        return self.player.query_duration(Gst.Format.TIME)[1]
+
 
 class Pipeline(BasePipeline):
     """Main class for multimedia handling.
