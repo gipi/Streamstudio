@@ -485,6 +485,13 @@ class PadPipeline(BasePipeline):
     """This pipeline use internally decodebin to create at runtime
     the needed pads
     """
+    __gsignals__ = {
+        'stream-added': (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_STRING,)
+        ),
+    }
     def __init__(self, location):
         super(PadPipeline, self).__init__(
             # FIXME: create element on pad-added signal when necessary, otherwise we are limited to only one audio and video sink
@@ -528,6 +535,8 @@ class PadPipeline(BasePipeline):
 
         pad.link(videosink.get_static_pad('sink'))
 
+        self.emit('stream-added', 'video')
+
     def _on_audio_dynamic_pad(self, dbin, pad):
         logger.debug('audio pad detected')
 
@@ -542,6 +551,8 @@ class PadPipeline(BasePipeline):
 
         audioconvert.link(audiosink)
         pad.link(audioconvert.get_static_pad('sink'))
+
+        self.emit('stream-added', 'audio')
 
 
 import cmd
@@ -609,7 +620,13 @@ if __name__ == "__main__":
     p = PadPipeline(sys.argv[1])
     def _on_error(*args):
         g_main_loop.quit()
+
+    def _on_source_added(*args):
+        print args
+        logger.info('added %s' % args[1])
+
     p.connect('error', _on_error)
+    p.connect('stream-added', _on_source_added)
     p.play()
 
     g_main_loop.run()
