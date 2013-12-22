@@ -479,7 +479,7 @@ class Pipeline(BasePipeline):
         self.player.set_state(Gst.State.PLAYING)
 
 def _quote_spaces(location):
-    return location.replace(' ', '\ ')
+    return location.replace(' ', '\ ').replace('(', '\(').replace(')', '\)')
 
 class PadPipeline(BasePipeline):
     """This pipeline use internally decodebin to create at runtime
