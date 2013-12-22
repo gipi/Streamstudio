@@ -72,16 +72,20 @@ class BasePipeline(GObject.GObject):
 
         self._setup_pipeline()
 
-    def _setup_pipeline(self):
-        """Launch the pipeline and connect bus to the right signals"""
-        logger.debug(self.pipeline_string)
-        self.player = Gst.parse_launch(self.pipeline_string)
+    def _setup_bus(self):
         bus = self.player.get_bus()
         bus.enable_sync_message_emission()
         bus.add_signal_watch()
 
         bus.connect('sync-message::element', self.__cb_on_sync())
         bus.connect('message', self.__cb_factory())
+
+    def _setup_pipeline(self):
+        """Launch the pipeline and connect bus to the right signals"""
+        logger.debug(self.pipeline_string)
+        self.player = Gst.parse_launch(self.pipeline_string)
+
+        self._setup_bus()
 
     def _on_message_error(self, message):
         # TODO: remove element if is a source
