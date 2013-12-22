@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
     import sys
 
-    pipeline_string = sys.argv[1] if len(sys.argv) > 1 else 'videotestsrc ! autovideosink'
+    pipeline_string = 'filesrc location=%s name=src ! decodebin name=demux ! autovideosink demux. ! autoaudiosink' % sys.argv[1] if len(sys.argv) > 1 else 'videotestsrc ! autovideosink'
 
     # GUI
     b = VideoSeekableInput()
@@ -161,12 +161,7 @@ if __name__ == '__main__':
     try:
         pipeline = BasePipeline(pipeline_string)
     except Exception:
-        print >>sys.stderr, '''usage: %s \'<pipeline description>\'
-
-Try to pass as pipeline description a thing like
-
-  'filesrc location=/path/to/some-file.mp4 ! decodebin name=demux ! autovideosink demux. ! autoaudiosink'
-''' % (sys.argv[0],)
+        print >>sys.stderr, 'usage: %s <filepath>' % (sys.argv[0],)
         sys.exit(1)
     def _cb_set_sink(p, imagesink):
         logger.debug('emitted from \'%s\' set-sink signal for \'%s\'' % (
