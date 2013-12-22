@@ -154,6 +154,10 @@ class BasePipeline(GObject.GObject):
                 self._on_message_error(message)
         return _cb
 
+    def pause(self):
+        """Set the internal gstreamer pipeline to STATE_PAUSED"""
+        self.player.set_state(Gst.State.PAUSED)
+
     def play(self):
         """Set the internal gstreamer pipeline to STATE_PLAYING"""
         self.player.set_state(Gst.State.PLAYING)
