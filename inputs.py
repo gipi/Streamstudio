@@ -51,6 +51,12 @@ class VideoInput(GObject.GObject, GuiMixin):
         self.btn_activate.connect('clicked', self._on_action_active)
         self.btn_remove.connect('clicked', self._on_action_remove)
 
+    def attach_to_pipeline(self, pipeline):
+        if not isinstance(pipeline, BasePipeline):
+            raise AttributeError('You have to pass a subclass of BasePipeline, you passed \'%s\'' % pipeline.__class__)
+
+        self.pipeline = pipeline
+
     def _on_delete_event(self,window,event):
         Gtk.main_quit()
 
@@ -92,6 +98,45 @@ class VideoSeekableInput(VideoInput):
         # here is the instance of GtkAdjustement and not GtkScale
         self.seeker = self._get_ui_element_by_name('vi_seek')
 
+    def _start_seek_polling(self):
+        def query_position():
+            position = self.pipeline.get_position()
+            duration = self.pipeline.get_duration()
+            logger.debug('position: %d' % position)
+
+            if duration > 0:
+                self.seeker.set_value(position*100/float(duration))
+
+            return True
+
+        logger.debug('attaching position cb')
+        self.position_cb_id = GObject.timeout_add(100, query_position)
+
+    def attach_to_pipeline(self, pipeline):
+        super(VideoSeekableInput, self).attach_to_pipeline(pipeline)
+
+        def _on_press(*args):
+            logger.debug('seek: clicked')
+            self.pipeline.player.set_state(Gst.State.PAUSED)
+
+            GObject.source_remove(self.position_cb_id)
+
+        def _on_release(*args):
+            new_position = self.seeker.get_value()*self.pipeline.get_duration()/100
+            logger.debug('seek: release at %f' % new_position)
+            self.pipeline.player.set_state(Gst.State.PLAYING)
+            self.pipeline.player.seek_simple(
+                Gst.Format.TIME,
+                Gst.SeekFlags.FLUSH,
+                new_position)
+
+            self._start_seek_polling()
+
+        # attach the onclick
+        self.seeker.connect('button-press-event', _on_press)
+        self.seeker.connect('button-release-event', _on_release)
+
+        self._start_seek_polling()
 
 if __name__ == '__main__':
     GObject.threads_init()
@@ -103,7 +148,7 @@ if __name__ == '__main__':
     pipeline_string = sys.argv[1] if len(sys.argv) > 1 else 'videotestsrc ! autovideosink'
 
     # GUI
-    b = VideoInput()
+    b = VideoSeekableInput()
     b.show_all()
 
     def _cb_remove(*args):print 'remove called', args
@@ -130,5 +175,7 @@ Try to pass as pipeline description a thing like
         b.set_sink(imagesink)
     pipeline.connect('set-sink', _cb_set_sink)
     pipeline.play()
+
+    b.attach_to_pipeline(pipeline)
 
     Gtk.main()
