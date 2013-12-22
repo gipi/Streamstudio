@@ -522,7 +522,7 @@ class PadPipeline(BasePipeline):
 
     def _on_dynamic_pad(self, dbin, pad):
         self.player.set_state(Gst.State.PAUSED)
-        caps = pad.get_current_caps().to_string()
+        caps = pad.query_caps(None).to_string()
         logger.debug('dynamic pad with caps %s' % caps)
 
         if caps.startswith('audio'):

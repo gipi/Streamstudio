@@ -59,11 +59,14 @@ class Main:
         self.pipeline.set_state(Gst.State.PLAYING)
 
     def OnDynamicPad(self, dbin, pad):
-        caps = pad.get_current_caps().to_string()
-        print "OnDynamicPad Called!", dbin, pad, caps
-        if caps.startswith('audio'):
+        logger.debug("OnDynamicPad Called! %s %s" % (dbin.get_name(), pad,))
+        caps = pad.query_caps(None)
+
+        logger.debug(' with capabilities: %s' % caps.to_string())
+
+        if caps.to_string().startswith('audio'):
             pad.link(self.convert.get_static_pad('sink'))
-        elif caps.startswith('video'):
+        elif caps.to_string().startswith('video'):
             pad.link(self.videosink.get_static_pad('sink'))
 
 
