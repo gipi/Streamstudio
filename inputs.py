@@ -102,7 +102,6 @@ class VideoSeekableInput(VideoInput):
         def query_position():
             position = self.pipeline.get_position()
             duration = self.pipeline.get_duration()
-            logger.debug('position: %d' % position)
 
             if duration > 0:
                 self.seeker.set_value(position*100/float(duration))
