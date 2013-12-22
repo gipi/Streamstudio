@@ -492,6 +492,78 @@ class Pipeline(BasePipeline):
 
         self.player.set_state(Gst.State.PLAYING)
 
+def _quote_spaces(location):
+    return location.replace(' ', '\ ')
+
+class PadPipeline(BasePipeline):
+    """This pipeline use internally decodebin to create at runtime
+    the needed pads
+    """
+    def __init__(self, location):
+        super(PadPipeline, self).__init__(
+            # FIXME: create element on pad-added signal when necessary, otherwise we are limited to only one audio and video sink
+            'filesrc location=%s ! decodebin name=demux queue name=video_queue ! autovideosink name=videosink queue name=audio_queue ! audioconvert ! autoaudiosink name=audiosink' % (
+                _quote_spaces(location),
+            )
+        )
+
+    def _setup_pipeline(self):
+        super(PadPipeline, self)._setup_pipeline()
+
+        # TODO: use '_X' for element intended to not be public
+        self.decode = self.player.get_by_name('demux')
+        self.video_queue = self.player.get_by_name('video_queue')
+        self.audio_queue = self.player.get_by_name('audio_queue')
+        self.audiosink = self.player.get_by_name('audiosink')
+
+        self.decode.connect("pad-added", self._on_dynamic_pad)
+
+        #self.player.set_state(Gst.State.PAUSED)
+
+    def _on_dynamic_pad(self, dbin, pad):
+        self.player.set_state(Gst.State.PAUSED)
+        caps = pad.get_current_caps().to_string()
+        logger.debug('dynamic pad with caps %s' % caps)
+
+        if caps.startswith('audio'):
+            self._on_audio_dynamic_pad(dbin, pad)
+        elif caps.startswith('video'):
+            self._on_video_dynamic_pad(dbin, pad)
+
+        self.player.set_state(Gst.State.PLAYING)
+
+    def _on_video_dynamic_pad(self, dbin, pad):
+        logger.debug('video pad detected')
+        """
+        videosink = Gst.ElementFactory.make('autovideosink', None)
+        queue = Gst.ElementFactory.make('queue', None)
+
+        self.player.add(videosink)
+        self.player.add(queue)
+
+        queue.link(videosink)
+        """
+        pad.link(self.video_queue.get_static_pad('sink'))
+
+    def _on_audio_dynamic_pad(self, dbin, pad):
+        logger.debug('audio pad detected')
+        """
+        audiosink = Gst.ElementFactory.make('autoaudiosink', None)
+        audioconvert = Gst.ElementFactory.make('audioconvert', None)
+        queue = Gst.ElementFactory.make('queue', None)
+
+        self.player.add(audiosink)
+        self.player.add(audioconvert)
+        self.player.add(queue)
+
+        queue.link(audioconvert)
+        audioconvert.link(audiosink)
+        """
+        pad.link(self.audio_queue.get_static_pad('sink'))
+
+
+
+
 import cmd
 
 class PipelineShell(cmd.Cmd):
@@ -549,6 +621,15 @@ class PipelineShell(cmd.Cmd):
 
 
 if __name__ == "__main__":
+    import sys
+    g_main_loop = GObject.MainLoop()
     GObject.threads_init()
     Gst.init(None)
-    PipelineShell().cmdloop()
+
+    p = PadPipeline(sys.argv[1])
+    def _on_error(*args):
+        g_main_loop.quit()
+    p.connect('error', _on_error)
+    p.play()
+
+    g_main_loop.run()
