@@ -23,6 +23,8 @@ class GuiMixin(object):
         builder.add_from_file(glade_file)
         builder.connect_signals(self)
 
+        assert builder != None
+
         # save it for future access
         self.builder = builder
 
