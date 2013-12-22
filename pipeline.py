@@ -96,7 +96,6 @@ class BasePipeline(GObject.GObject):
 
         self.emit("error", err)
 
-        self.remove_source(message.src.get_name())
 
     def _on_message_prepare_window_handle(self, message):
         imagesink = message.src
