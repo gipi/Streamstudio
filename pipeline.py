@@ -132,8 +132,9 @@ class BasePipeline(GObject.GObject):
     def __cb_factory(self):
         def _cb(bus, message):
             t = message.type
+            src = message.src
             logger.debug('received message type \'%s\' from \'%s\'' % (
-                t.first_value_nick, message.src.get_name(),
+                t.first_value_nick, src.get_name(),
             ))
 
             if t == Gst.MessageType.EOS:
@@ -142,6 +143,13 @@ class BasePipeline(GObject.GObject):
                 logger.debug(' %s' % (message.parse_warning(),))
             elif t == Gst.MessageType.QOS:
                 logger.debug(' %s' % (message.parse_qos(),))
+            elif t == Gst.MessageType.STREAM_STATUS:
+                logger.debug(' %s' % (message.parse_stream_status(),))
+            elif t == Gst.MessageType.STATE_CHANGED:
+                old_state, new_state, pending = message.parse_state_changed()
+                logger.debug(' %s -> %s (pending %s)' %
+                    (old_state.value_nick, new_state.value_nick, pending.value_nick,)
+                )
             elif t == Gst.MessageType.ERROR:
                 self._on_message_error(message)
         return _cb
