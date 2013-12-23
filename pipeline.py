@@ -19,6 +19,7 @@ The BasePipeline class has two signals associated with it
 """
 import os
 from sslog import logger
+from utils import flatten
 from gi.repository import Gst, GObject
 
 print 'GObject v%s' % GObject._version
@@ -494,12 +495,19 @@ class PadPipeline(BasePipeline):
         'stream-added': (
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_NONE,
-            (GObject.TYPE_STRING,)
+            (GObject.TYPE_STRING, GObject.TYPE_INT,)
         ),
     }
     def __init__(self, location):
         self._location = location
         super(PadPipeline, self).__init__(self._build_pipeline_string())
+
+        # 0-indexed audio and video sources
+        self._audio_source_counter = 0
+        self._audio_elements = []
+
+        self._video_source_counter = 0
+        self._video_elements = []
 
     def _build_pipeline_string(self):
             return 'filesrc location=%s ! decodebin name=demux' % (
@@ -589,9 +597,8 @@ class PadPipeline(BasePipeline):
     def _on_video_dynamic_pad(self, dbin, pad):
         logger.debug('video pad detected')
 
-        sink = self._attach_branch_to_element(
-            self._build_video_branch()
-        )
+        elements = self._build_video_branch()
+        sink = self._attach_branch_to_element(elements)
 
         # as said, the first element is connected to the source
         pad.link(sink.get_static_pad('sink'))
@@ -599,21 +606,46 @@ class PadPipeline(BasePipeline):
             (pad, sink.get_name(),)
         )
 
-        self.emit('stream-added', 'video')
+        self._video_source_counter += 1
+        self._video_elements.append(list(flatten(elements)))
+
+        self.emit('stream-added', 'video', self._video_source_counter - 1)
 
     def _on_audio_dynamic_pad(self, dbin, pad):
         logger.debug('audio pad detected')
 
-        sink = self._attach_branch_to_element(
-            self._build_audio_branch()
-        )
+        elements = self._build_audio_branch()
+        sink = self._attach_branch_to_element(elements)
 
         pad.link(sink.get_static_pad('sink'))
         logger.debug(' %s <=> %s' % 
             (pad, sink.get_name(),)
         )
 
-        self.emit('stream-added', 'audio')
+        self._audio_source_counter += 1
+        self._audio_elements.append(list(flatten(elements)))
+
+        self.emit('stream-added', 'audio', self._audio_source_counter - 1)
+
+    def _get_stream_id_from_element(self, element):
+        """Tell us at what stream the element passed as argument belongs"""
+        count = 0
+        for stream_elements in self._video_elements:
+            count += 1
+            if element in stream_elements:
+                return ('video', count,)
+
+        count = 0
+        for stream_elements in self._audio_elements:
+            count += 1
+            if element in stream_elements:
+                return ('audio', count,)
+
+        print self._audio_elements
+        print self._video_elements
+
+        return (None, None,)
+
 
 class StreamStudioSource(PadPipeline):
     """This class represents a source stream usable by StreamStudio.
