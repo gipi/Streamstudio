@@ -137,6 +137,59 @@ class VideoSeekableInput(VideoInput):
 
         self._start_seek_polling()
 
+class AudioInput(GObject.GObject, GuiMixin):
+    main_class = 'mainWindow'
+    glade_file_path = 'volume-meter.glade'
+
+    __gsignals__ = {
+        'volume-change': (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_FLOAT,)
+        )
+    }
+
+    def __init__(self):
+        GObject.GObject.__init__(self)
+        self._build_gui()
+
+        self.gui_volume = self.builder.get_object('volumebutton')
+        self.gui_level = self.builder.get_object('progressbar')
+
+        assert self.gui_level
+        assert self.gui_volume
+
+        self.gui_volume.connect('value-changed', self._on_volume_changed)
+
+    def _on_volume_changed(self, widget, value):
+        print value
+        self.emit('volume-change', value)
+
+    def _rescale_db_to_level(self, db_value):
+        """Since the level is from 0 to 100 but the db levels are(?) in the
+        range -100 to 20, we use this function to shift and rescale
+
+        0/-100 : 100/20
+        """
+        db_min    = -100.0
+        db_max    = 20.0
+        level_min = 0.0
+        level_max = 1.0
+
+        v = level_min + abs(db_value) / (db_max - db_min) * (level_max - level_min)
+
+        return v
+
+    def set_gui_volume(self, volume_level):
+        self.gui_volume.set_value(volume_level)
+
+
+    def set_gui_level(self, value):
+        self.gui_level.set_fraction(self._rescale_db_to_level(value))
+
+    def reparent_in(self, container):
+        self._get_ui_element_by_name('vi_main_container').reparent(container)
+
 if __name__ == '__main__':
     GObject.threads_init()
     Gst.init(None)
