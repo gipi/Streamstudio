@@ -603,6 +603,26 @@ class PadPipeline(BasePipeline):
 
         self.emit('stream-added', 'audio')
 
+class StreamStudioSource(PadPipeline):
+    """This class represents a source stream usable by StreamStudio.
+
+    It's a pipeline having a monitor for each one stream made available from the original
+    resource associated with a appsink element
+
+    TODO: listen to volume element by messages?
+    """
+    def _build_video_branch(self):
+        """Return a list of element to link in the given order. The last one
+        is to link with the pad.
+        """
+        return [
+            Gst.ElementFactory.make('tee', None), [
+                [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('autovideosink', None),],
+                [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('appsink', None),],
+            ]
+        ]
+
+
 
 import cmd
 
