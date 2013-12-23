@@ -522,18 +522,67 @@ class PadPipeline(BasePipeline):
         elif caps.startswith('video'):
             self._on_video_dynamic_pad(dbin, pad)
 
+    def _build_video_branch(self):
+        """Return a list of element to link in the given order. The last one
+        is to link with the pad.
+        """
+        return [
+            Gst.ElementFactory.make('autovideosink', None),
+        ]
+
+
+    def _attach_branch_to_element(self, elements):
+        """Create a new branch starting from the given element.
+
+        This method allows to create recursively a new branch: if the list passed
+        as argument contains a Tee element, then the following element could be
+        a list of lists of elements that will be attached to this Tee element.
+
+        In this case, the elements after the list are ignored.
+
+        NOTE: rememeber to add a queue as first element of each sub-list otherwise the pipeline will hang.
+        """
+        to_link = None
+        is_tee_mode = False
+        # now we loop over each element and link them in the given order
+        for el in elements:
+            # if we don't have a GstElement probably is a list
+            if is_tee_mode and not isinstance(el, Gst.Element):
+                for tee_branches in el:
+                    to_link.link(self._attach_branch_to_element(tee_branches))
+
+                break
+            else:
+                self.player.add(el)
+
+                # http://delog.wordpress.com/2011/07/25/link-dynamic-pads-of-demuxer/
+                #  The state of these new elements needs to set to GST_STATE_PLAYING.
+                el.set_state(Gst.State.PLAYING)
+
+            if to_link is not None:
+                logger.debug(' %s -> %s' % 
+                    (to_link.get_name(), el.get_name(),)
+                )
+                to_link.link(el)
+
+            to_link = el
+
+            is_tee_mode = (el.__gtype__.name == 'GstTee')
+
+        return elements[0]
 
     def _on_video_dynamic_pad(self, dbin, pad):
         logger.debug('video pad detected')
- 
-        videosink = Gst.ElementFactory.make('autovideosink', None)
 
-        self.player.add(videosink)
-        # http://delog.wordpress.com/2011/07/25/link-dynamic-pads-of-demuxer/
-        #  The state of these new elements needs to set to GST_STATE_PLAYING.
-        videosink.set_state(Gst.State.PLAYING)
+        sink = self._attach_branch_to_element(
+            self._build_video_branch()
+        )
 
-        pad.link(videosink.get_static_pad('sink'))
+        # as said, the first element is connected to the source
+        pad.link(sink.get_static_pad('sink'))
+        logger.debug(' %s <=> %s'
+            (pad, sink.get_name(),)
+        )
 
         self.emit('stream-added', 'video')
 
