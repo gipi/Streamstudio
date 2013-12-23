@@ -655,6 +655,50 @@ class StreamStudioSource(PadPipeline):
 
     TODO: listen to volume element by messages?
     """
+    __gsignals__ = {
+        'level-change': (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_INT, GObject.TYPE_FLOAT,)
+        )
+    }
+
+    def __init__(self, *args):
+        super(StreamStudioSource, self).__init__(*args)
+
+        self._volumes = {}
+
+    def _on_message_element(self, message):
+        super(StreamStudioSource, self)._on_message_element(message)
+
+        if message.get_structure().get_name() == 'level':
+            tipe, count = self._get_stream_id_from_element(message.src)
+            rms = message.get_structure().get_value('rms')[0]
+            peak = message.get_structure().get_value('peak')[0]
+            decay = message.get_structure().get_value('decay')[0]
+
+            self.emit('level-change', count - 1, rms)
+
+    def set_volume_for_stream(self, stream_id, value):
+        self._volumes[stream_id].set_property('volume', value)
+
+    def _build_audio_branch(self):
+        """Return a list of element to link in the given order. The last one
+        is to link with the pad.
+        """
+        volume = Gst.ElementFactory.make('volume', None)
+        self._volumes[self._audio_source_counter] = volume
+        return [
+            Gst.ElementFactory.make('tee', None), [
+                [
+                    Gst.ElementFactory.make('queue', None),
+                    Gst.ElementFactory.make('level', None),
+                    volume,
+                    Gst.ElementFactory.make('autoaudiosink', None),
+                ],
+                [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('appsink', None),],
+            ]
+        ]
     def _build_video_branch(self):
         """Return a list of element to link in the given order. The last one
         is to link with the pad.
