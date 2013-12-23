@@ -634,6 +634,9 @@ class StreamStudioSource(PadPipeline):
             ]
         ]
 
+class V4L2StreamStudioSource(StreamStudioSource):
+    def _build_pipeline_string(self):
+        return 'v4l2src device=%s ! decodebin name=demux' % self._location
 
 
 import cmd
