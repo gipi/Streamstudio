@@ -498,12 +498,13 @@ class PadPipeline(BasePipeline):
         ),
     }
     def __init__(self, location):
-        super(PadPipeline, self).__init__(
-            # FIXME: create element on pad-added signal when necessary, otherwise we are limited to only one audio and video sink
-            'filesrc location=%s ! decodebin name=demux' % (
-                _quote_spaces(location),
+        self._location = location
+        super(PadPipeline, self).__init__(self._build_pipeline_string())
+
+    def _build_pipeline_string(self):
+            return 'filesrc location=%s ! decodebin name=demux' % (
+                _quote_spaces(self._location),
             )
-        )
 
     def _setup_pipeline(self):
         super(PadPipeline, self)._setup_pipeline()
