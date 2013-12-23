@@ -82,6 +82,9 @@ class BasePipeline(GObject.GObject):
 
         self.emit("error", err)
 
+    def _on_message_element(self, message):
+        message_name = message.get_structure().get_name()
+        src = message.src
 
     def _on_message_prepare_window_handle(self, message):
         imagesink = message.src
@@ -135,6 +138,8 @@ class BasePipeline(GObject.GObject):
                 logger.debug(' %s -> %s (pending %s)' %
                     (old_state.value_nick, new_state.value_nick, pending.value_nick,)
                 )
+            elif t == Gst.MessageType.ELEMENT:
+                self._on_message_element(message)
             elif t == Gst.MessageType.ERROR:
                 self._on_message_error(message)
         return _cb
