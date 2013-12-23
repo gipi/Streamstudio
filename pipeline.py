@@ -589,7 +589,7 @@ class PadPipeline(BasePipeline):
 
         # as said, the first element is connected to the source
         pad.link(sink.get_static_pad('sink'))
-        logger.debug(' %s <=> %s'
+        logger.debug(' %s <=> %s' %
             (pad, sink.get_name(),)
         )
 
@@ -603,7 +603,7 @@ class PadPipeline(BasePipeline):
         )
 
         pad.link(sink.get_static_pad('sink'))
-        logger.debug(' %s <=> %s'
+        logger.debug(' %s <=> %s' % 
             (pad, sink.get_name(),)
         )
 
