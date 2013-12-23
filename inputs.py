@@ -43,13 +43,26 @@ class VideoInput(GObject.GObject, GuiMixin):
         self._build_gui()
 
         self.da = self._get_ui_element_by_name('vi_drawingarea')
+        self._main_container = self._get_ui_element_by_name('vi_main_container')
+        self._main_container.set_size_request(400, 320)
         self.btn_activate = self._get_ui_element_by_name('btn_activate')
         self.btn_remove = self._get_ui_element_by_name('btn_remove')
+
+        assert self.da
+        assert self._main_container
+        assert self.btn_activate
+        assert self.btn_remove
 
         self._get_main_class().connect('delete-event', self._on_delete_event)
 
         self.btn_activate.connect('clicked', self._on_action_active)
         self.btn_remove.connect('clicked', self._on_action_remove)
+
+    def reparent_in(self, container):
+        logger.debug('reparenting %s with %s' %
+            (self._main_container, container,)
+        )
+        self._main_container.reparent(container)
 
     def attach_to_pipeline(self, pipeline):
         if not isinstance(pipeline, BasePipeline):
@@ -189,6 +202,116 @@ class AudioInput(GObject.GObject, GuiMixin):
 
     def reparent_in(self, container):
         self._get_ui_element_by_name('vi_main_container').reparent(container)
+
+
+class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
+    """Class that take a pipeline and create on need the monitor elements
+    needed to show the related stream.
+
+    When the stream has finished, the window emit the signal blabla
+    """
+    main_class = 'ui_ssmonitorwindow'
+    def __init__(self, pipeline):
+        GObject.GObject.__init__(self)
+
+        self.pipeline = pipeline
+
+        self._build_gui()
+
+        # this is the hbox will contain the audio and video
+        self._monitor_container = self._get_ui_element_by_name('ui_monitor_container')
+
+        # here is the instance of GtkAdjustement and not GtkScale
+        self.seeker = self._get_ui_element_by_name('ss_seek')
+
+        self._connect_signals()
+
+        # dicts with as key the stream-id and as value the GtkWidget
+        self._audio_streams = {}
+        self._video_streams = {}
+
+    def _connect_signals(self):
+        self.pipeline.connect('stream-added', self._on_stream_added)
+        self.pipeline.connect('set-sink', self._on_set_sink)
+        self.pipeline.connect('level-change', self._on_level_change)
+
+        # attach the onclick
+        self.seeker.connect('button-press-event', self._on_press)
+        self.seeker.connect('button-release-event', self._on_release)
+
+        self._start_seek_polling()
+
+        self._get_main_class().connect('delete-event', self._on_quit)
+
+    def _on_quit(self, window, event):
+        Gtk.main_quit()
+
+    def _on_set_sink(self, pipeline, imagesink):
+        Gdk.threads_enter()
+        videoinput = VideoInput()
+        videoinput.reparent_in(self._monitor_container)
+        Gdk.threads_leave()
+
+        videoinput.set_sink(imagesink)
+        Gdk.threads_enter()
+
+        videoinput.show_all()
+        # this is MUST stay here otherwise the old window is not destroyed
+        videoinput._get_main_class().destroy()
+        Gdk.threads_leave()
+
+    def _on_level_change(self, pipeline, stream_id, level_value):
+        self._audio_streams[stream_id].set_gui_level(level_value)
+
+    def _start_seek_polling(self):
+        def query_position():
+            position = self.pipeline.get_position()
+            duration = self.pipeline.get_duration()
+
+            if duration > 0:
+                self.seeker.set_value(position*100/float(duration))
+
+            return True
+
+        logger.debug('attaching position cb')
+        self.position_cb_id = GObject.timeout_add(100, query_position)
+
+    def _on_press(self, *args):
+        logger.debug('seek: clicked')
+        self.pipeline.player.set_state(Gst.State.PAUSED)
+
+        GObject.source_remove(self.position_cb_id)
+
+    def _on_release(self, *args):
+        new_position = self.seeker.get_value()*self.pipeline.get_duration()/100
+        logger.debug('seek: release at %f' % new_position)
+        self.pipeline.player.set_state(Gst.State.PLAYING)
+        self.pipeline.player.seek_simple(
+            Gst.Format.TIME,
+            Gst.SeekFlags.FLUSH,
+            new_position)
+
+        self._start_seek_polling()
+
+    def _on_stream_added(self, pipeline, stream_type, count):
+        """Use this to set the volume GUI, I know is asymetric with respect
+        to the video streams but it's a wild world
+        """
+        logger.debug('_on_stream_added %s-%d' % (stream_type, count,))
+        if stream_type == 'audio':
+            Gdk.threads_enter()
+            vi = AudioInput()
+            vi.show_all()
+
+            vi.reparent_in(self._monitor_container)
+            vi._get_main_class().destroy()
+            Gdk.threads_leave()
+
+            self._audio_streams[count] = vi
+            def _cb_on_volume_change(vinput, value):
+                self.pipeline.set_volume_for_stream(count, value)
+
+            vi.connect('volume-change', _cb_on_volume_change)
 
 if __name__ == '__main__':
     GObject.threads_init()
