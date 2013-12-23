@@ -530,6 +530,15 @@ class PadPipeline(BasePipeline):
             Gst.ElementFactory.make('autovideosink', None),
         ]
 
+    def _build_audio_branch(self):
+        """Return a list of element to link in the given order. The first one
+        is to link with the pad.
+        """
+        return [
+            Gst.ElementFactory.make('tee', None), [
+                [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('autoaudiosink', None), ],
+            ]
+        ]
 
     def _attach_branch_to_element(self, elements):
         """Create a new branch starting from the given element.
@@ -589,17 +598,14 @@ class PadPipeline(BasePipeline):
     def _on_audio_dynamic_pad(self, dbin, pad):
         logger.debug('audio pad detected')
 
-        audiosink = Gst.ElementFactory.make('autoaudiosink', None)
-        audioconvert = Gst.ElementFactory.make('audioconvert', None)
+        sink = self._attach_branch_to_element(
+            self._build_audio_branch()
+        )
 
-        self.player.add(audiosink)
-        self.player.add(audioconvert)
-
-        audiosink.set_state(Gst.State.PLAYING)
-        audioconvert.set_state(Gst.State.PLAYING)
-
-        audioconvert.link(audiosink)
-        pad.link(audioconvert.get_static_pad('sink'))
+        pad.link(sink.get_static_pad('sink'))
+        logger.debug(' %s <=> %s'
+            (pad, sink.get_name(),)
+        )
 
         self.emit('stream-added', 'audio')
 
