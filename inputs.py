@@ -2,7 +2,7 @@ from sslog import logger
 # GstVideo and GdkX11 are necessary to avoid these bugs
 # <https://bugzilla.gnome.org/show_bug.cgi?id=673396>
 from gi.repository import Gtk, GObject, Gdk, Gst, GstVideo, GdkX11
-from pipeline import BasePipeline
+from pipeline import BasePipeline, StreamStudioSource
 from gui import GuiMixin
 
 
@@ -320,32 +320,19 @@ if __name__ == '__main__':
 
     import sys
 
-    pipeline_string = 'filesrc location=%s name=src ! decodebin name=demux ! autovideosink demux. ! autoaudiosink' % sys.argv[1] if len(sys.argv) > 1 else 'videotestsrc ! autovideosink'
+    # PIPELINE
+    try:    
+        pipeline = StreamStudioSource(sys.argv[1])
+    except Exception as e:
+        print >>sys.stderr, 'usage: %s <filepath>' % (sys.argv[0],)
+        logger.error(e)
+        sys.exit(1)
 
     # GUI
-    b = VideoSeekableInput()
+    b = StreamStudioMonitorInput(pipeline)
     b.show_all()
 
-    def _cb_remove(*args):print 'remove called', args
-    def _cb_activated(*args):print 'activated called', args
-
-    b.connect('removed', _cb_remove)
-    b.connect('monitor-activated', _cb_activated)
-
-    # PIPELINE
-    try:
-        pipeline = BasePipeline(pipeline_string)
-    except Exception:
-        print >>sys.stderr, 'usage: %s <filepath>' % (sys.argv[0],)
-        sys.exit(1)
-    def _cb_set_sink(p, imagesink):
-        logger.debug('emitted from \'%s\' set-sink signal for \'%s\'' % (
-            p, imagesink,
-        ))
-        b.set_sink(imagesink)
-    pipeline.connect('set-sink', _cb_set_sink)
     pipeline.play()
 
-    b.attach_to_pipeline(pipeline)
 
     Gtk.main()
