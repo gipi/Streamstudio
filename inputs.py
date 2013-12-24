@@ -261,7 +261,13 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         Gdk.threads_leave()
 
     def _on_level_change(self, pipeline, stream_id, level_value):
-        self._audio_streams[stream_id].set_gui_level(level_value)
+        Gdk.threads_enter()
+        try:
+            self._audio_streams[stream_id].set_gui_level(level_value)
+        except Exception as e:
+            logger.error(e)
+        finally:
+            Gdk.threads_leave()
 
     def _start_seek_polling(self):
         def query_position():
@@ -269,7 +275,13 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
             duration = self.pipeline.get_duration()
 
             if duration > 0:
-                self.seeker.set_value(position*100/float(duration))
+                Gdk.threads_enter()
+                try:
+                    self.seeker.set_value(position*100/float(duration))
+                except Exception as e:
+                    logger.error(e)
+                finally:
+                    Gdk.threads_leave()
 
             return True
 
