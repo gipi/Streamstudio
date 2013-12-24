@@ -218,6 +218,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         ),
     }
     main_class = 'ui_ssmonitorwindow'
+    main_container_class = 'box1'
     def __init__(self, pipeline):
         GObject.GObject.__init__(self)
 
