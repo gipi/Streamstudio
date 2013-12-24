@@ -567,6 +567,8 @@ class PadPipeline(BasePipeline):
         """
         to_link = None
         is_tee_mode = False
+        caps_to_filter_with = None
+
         # now we loop over each element and link them in the given order
         for el in elements:
             # if we don't have a GstElement probably is a list
@@ -575,6 +577,10 @@ class PadPipeline(BasePipeline):
                     to_link.link(self._attach_branch_to_element(tee_branches))
 
                 break
+            elif el.__gtype__.name == 'GstCaps':
+                # if we found a caps then avoid the loop and save the caps
+                caps_to_filter_with = el
+                continue
             else:
                 self.player.add(el)
 
@@ -586,11 +592,13 @@ class PadPipeline(BasePipeline):
                 logger.debug(' %s -> %s' % 
                     (to_link.get_name(), el.get_name(),)
                 )
-                to_link.link(el)
+                to_link.link_filtered(el, caps_to_filter_with)
+                caps_to_filter_with = None
 
             to_link = el
 
             is_tee_mode = (el.__gtype__.name == 'GstTee')
+            caps_to_filter_with = None
 
         return elements[0]
 
