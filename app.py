@@ -74,7 +74,7 @@ class Main:
         size = width * height * depth
         bffer = Gst.Buffer.new_allocate(None, size, None)
 
-        bffer.memset(0, 0x08 if self.isWhite else 0xf8, size)
+        bffer.memset(0, 0x00 if self.isWhite else 0xff, size)
 
         bffer.pts = self.timestamp
         bffer.duration = Gst.util_uint64_scale_int(1, Gst.SECOND, 30)
