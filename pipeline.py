@@ -734,6 +734,11 @@ class V4L2StreamStudioSource(StreamStudioSource):
     def _build_pipeline_string(self):
         return 'v4l2src device=%s ! decodebin name=demux' % self._location
 
+class StreamStudioOutput(BasePipeline):
+    """Pipeline used to finally produce the streaming needed."""
+
+    def __init__(self):
+        super(StreamStudioOutput, self).__init__('videotestsrc ! autovideosink')
 
 import cmd
 
