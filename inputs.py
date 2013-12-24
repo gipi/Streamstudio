@@ -210,6 +210,13 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
 
     When the stream has finished, the window emit the signal blabla
     """
+    __gsignals__ = {
+        'activated': (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            ()
+        ),
+    }
     main_class = 'ui_ssmonitorwindow'
     def __init__(self, pipeline):
         GObject.GObject.__init__(self)
@@ -259,6 +266,8 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         # this is MUST stay here otherwise the old window is not destroyed
         videoinput._get_main_class().destroy()
         Gdk.threads_leave()
+
+        self.emit('activated')
 
     def _on_level_change(self, pipeline, stream_id, level_value):
         Gdk.threads_enter()
