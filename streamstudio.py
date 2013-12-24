@@ -10,7 +10,7 @@ import sys
 from sslog import logger
 from gui import GuiMixin
 
-from gi.repository import Gtk, GObject, Gdk
+from gi.repository import Gtk, GObject, Gdk, Gst
 import pipeline
 
 print 'Gtk %d.%d.%d' % (
@@ -21,83 +21,50 @@ print 'Gtk %d.%d.%d' % (
 
 class StreamStudio(GuiMixin):
     main_class = 'ssWindow'
-    def __init__(self, videodevicepaths, title='StreamStudio'):
+    def __init__(self):
         self._build_gui()
-        self.main_monitor_widget = self._get_ui_element_by_name('frame1')
-        self.main_monitor_widget.set_size_request(600, 400)
+        self._main_monitor_container = self._get_ui_element_by_name('frame1')
         self.sources_vbox = self._get_ui_element_by_name('box3')
 
-        self.videodevicepaths = videodevicepaths
-        # this dictionary will have as keys the VideoInput instances
-        # and as values the respective video devices.
-        self.monitors = {} 
+        self._pipeline_sources = []
 
-        self.videowidget = inputs.VideoInput()
-        childWidget = self.videowidget.main_vbox
-        # this is the main monitor so attach it to the left
-        childWidget.reparent(self.main_monitor_widget)
-        childWidget.show_all()
+        self._configure_initial_pipeline()
+        self._start_initial_pipeline()
 
+    def _configure_initial_pipeline(self):
+        """Create the output pipeline"""
+        self._output_pipeline = pipeline.StreamStudioOutput()
+        self._output_widget = inputs.StreamStudioMonitorOutput(self._output_pipeline)
 
-    def _add_viewer_to_gui(self, devicepath=None):
-        """Create a VideoInput attach it to the main GUI and return it.
+        self._output_widget.show_all()
 
-        Also it possible to associate a dictionary to the instance.
-        """
-        viewer = inputs.VideoInput() 
-        childWidget = viewer.main_vbox
-        childWidget.reparent(self.sources_vbox)
-
-        # since we are ready to append, save the position
-        # for the "remove" callback
-        def _cb_created(obj, *args, **kwargs):
-            print '#UAU viewer removed', obj
-
-        def _cb_activated(obj, *args, **kwargs):
-            print ' # a monitor has been activated', obj
+        def __cb_on_activated(ssmo):
             try:
-                self.pipeline.switch_to(self.monitors[obj])
-            except KeyError, e:
-                logger.error(list(self.monitors.keys()))
-                logger.exception(e)
+                self._output_widget.reparent_in(self._main_monitor_container)
+            except Exception as e:
+                logger.error(e)
+            finally:
+                pass
 
-        viewer.connect('removed', _cb_created)
-        viewer.connect('monitor-activated', _cb_activated)
+        self._output_widget.connect('activated', __cb_on_activated)
 
-        if devicepath:
-            self.monitors[viewer] = devicepath
+    def _start_initial_pipeline(self):
+        self._output_pipeline.play()
 
-        childWidget.show_all()
+    def _add_source_pipeline(self, filename):
+        p = pipeline.StreamStudioSource(filename)
+        w = inputs.StreamStudioMonitorInput(p)
 
-        return viewer
+        w.show_all()
 
-    def _get_monitor_from_devicepath(self, devicepath):
-        """Here simply check if the name is main_monitor
-        if it is then return the main monitor otherwise create a new VideoInput
-        and
-        """
-        if not devicepath:
-            logger.debug("yes")
-            return self.videowidget
-        else:
-            logger.debug("no")
-            return self._add_viewer_to_gui(devicepath=devicepath)
-
-    def _cb_for_xsink(self, imagesink, devicepath):
-        self.set_sink_for(None, imagesink, devicepath)
-
-    def set_sink_for(self, obj, sink, devicepath):
-        """sink is an imagesink instance"""
-        Gdk.threads_enter()
-        logger.debug("set sink %s:%s:%s" % (obj, sink, devicepath,))
-        try:
-            monitor = self._get_monitor_from_devicepath(devicepath)
-            monitor.set_sink(sink)
-        except Exception, e:
-            logger.exception(e)
-        finally:
+        def __cb_on_activated(ssmo):
+            Gdk.threads_enter()
+            w.reparent_in(self.sources_vbox)
             Gdk.threads_leave()
-        logger.debug("set sink: exit")
+
+        w.connect('activated', __cb_on_activated)
+
+        p.play()
 
     def _on_action_add_new_video_source(self, action):
         self.add_video_source()
@@ -120,22 +87,11 @@ class StreamStudio(GuiMixin):
     def _on_delete_event(self, window, event):
         self.quit()
 
-    def _on_show(self, *args):
-        # http://blog.yorba.org/jim/2010/10/those-realize-map-widget-signals.html
-        # map-event: is a GDK event. This is called when the window is now on-screen,
-        #            i.e. the connection is complete. It's like a callback.
-        self.pipeline = pipeline.Pipeline([], xsink_cb=self._cb_for_xsink)
-        for device in self.videodevicepaths:
-            self.pipeline.add_source(device)
-
-        self.pipeline.play()
-
     def _on_video_source_device_selection(self, filename):
         """
         When the selection is successfully then get the filename
         create the proper pipeline and pass it to self._control_pipeline. 
         """
-        self.pipeline.add_source(filename)
 
     def _alert_message(self, message):
         self.statusbar.push(self._menu_cix,message)
@@ -265,7 +221,7 @@ class StreamStudio(GuiMixin):
         dialog.destroy()
 
     def quit(self):
-        self.pipeline.kill()
+        self._output_pipeline.kill()
         Gtk.main_quit()
 
 def usage(progname):
@@ -274,8 +230,9 @@ def usage(progname):
 
 if __name__ == '__main__':
     GObject.threads_init()
-    Gdk.threads_init()
     Gst.init(None)
-    a = StreamStudio(sys.argv[1:])
+    Gdk.threads_init()
+
+    a = StreamStudio()
     a.show_all()
     Gtk.main()
