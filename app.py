@@ -10,7 +10,7 @@ Gst.init(None)
 
 
 class Main:
-    def __init__(self, pipeline_string='videotestsrc ! video/x-raw,framerate=(fraction)30/1 ! tee name=t ! queue ! autovideosink t. ! queue ! appsink name=sink'):
+    def __init__(self, pipeline_string='videotestsrc pattern=18 ! tee name=t ! queue ! autovideosink t. ! queue ! videoconvert ! videorate ! video/x-raw,width=(int)320,height=(int)240,format=(string)RGB16,framerate=(fraction)30/1 ! appsink name=sink'):
         self.data = None# this will contain the data passed between
         self.source_id = None
         self.lock = Lock()
@@ -31,13 +31,13 @@ class Main:
         self.pipeline.set_state(Gst.State.PLAYING)
 
         # OUTPUT pipeline
-        self.pipeline_out = Gst.parse_launch('appsrc name=source ! autovideosink')
+        self.pipeline_out = Gst.parse_launch('appsrc name=source ! videoconvert ! autovideosink')
 
         self.appsrc = self.pipeline_out.get_by_name('source')
 
         assert self.appsrc, 'appsrc element named \'source\' not found'
 
-        self.appsrc.set_property('caps', Gst.Caps.from_string('video/x-raw,format=(string)YUY2,width=(int)320,height=(int)240,framerate=(fraction)30/1'))
+        self.appsrc.set_property('caps', Gst.Caps.from_string('video/x-raw,format=(string)RGB16,width=(int)320,height=(int)240,framerate=(fraction)30/1'))
 
         self.appsrc.connect('need-data', self.on_need_data)
         self.appsrc.connect('enough-data', self.on_enough_data)
