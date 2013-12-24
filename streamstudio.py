@@ -141,31 +141,45 @@ class StreamStudio(GuiMixin):
         self.statusbar.push(self._menu_cix,message)
         print message
 
+    def _open_dialog(self, title, patterns, current_folder_path, callback):
+        fs = Gtk.FileChooserDialog(title, None,
+                        Gtk.FileChooserAction.OPEN,
+                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                                        Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+
+        fs.set_default_response(Gtk.ResponseType.OK)
+
+        for name, pattern in patterns:
+            filter = Gtk.FileFilter()
+            filter.set_name(name)
+            filter.add_pattern(pattern)
+            fs.add_filter(filter)
+
+        try:
+            fs.set_current_folder(current_folder_path)
+            fs.add_shortcut_folder(current_folder_path)
+        except:
+            pass# shortcut already exists
+        response = fs.run()
+
+        if response == Gtk.ResponseType.OK:
+               callback(fs.get_filename())
+        elif response == Gtk.ResponseType.CANCEL:
+              self._alert_message('No video device selected')
+        fs.destroy()
+
     def add_video_source(self, data):
         """Open a dialog to choose the proper video device
            then pass chosed file to self._on_device_selection
         """
-        fs = Gtk.FileChooserDialog("Choose a video device",None,
-                        Gtk.FileChooserAction.OPEN,
-                        (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
-        fs.set_default_response(Gtk.ResponseType.OK)
-        filter = Gtk.FileFilter()
-        filter.set_name("Video devices")
-        filter.add_pattern("video*")
-        fs.add_filter(filter)
-        filter = Gtk.FileFilter()
-        filter.set_name("All files")
-        filter.add_pattern("*")
-        fs.add_filter(filter)
-        fs.set_current_folder("/dev")
-        fs.add_shortcut_folder("/dev")
-        response = fs.run()
-        if response == Gtk.ResponseType.OK:
-               self._on_video_source_device_selection(fs.get_filename())
-        elif response == Gtk.ResponseType.CANCEL:
-              self._alert_message('No video device selected')
-        fs.destroy()
+        self._open_dialog(
+            'Choose you device to open',
+            [
+                ('video devices', 'video*'),
+                ('All files', '*'),
+            ],
+            '/dev',
+            self._on_video_source_device_selection)
 
     def new_gs_pipeline(self):
         """Opens a dialog window to insert your own gstreamer pipeline"""
@@ -188,38 +202,14 @@ class StreamStudio(GuiMixin):
                 dialog.destroy()
  
     def open(self):
-        fs = Gtk.FileChooserDialog("Choose a file with pipelines",None,
-                        Gtk.FILE_CHOOSER_ACTION_OPEN,
-                        (Gtk.STOCK_CANCEL, Gtk.RESPONSE_CANCEL,
-                                        Gtk.STOCK_OPEN, Gtk.RESPONSE_OK))
-        fs.set_default_response(Gtk.RESPONSE_OK)
-        filter = Gtk.FileFilter()
-        filter.set_name("StreamStudio files")
-        filter.add_pattern("*.streamstudio")
-        fs.add_filter(filter)
-        filter = Gtk.FileFilter()
-        filter.set_name("All files")
-        filter.add_pattern("*")
-        fs.add_filter(filter)
-        #fs.set_current_folder("$HOME/.streamstudio")
-        response = fs.run()
-        if response == Gtk.RESPONSE_OK:
-            filename=fs.get_filename()
-            if not filename.split(".")[-1] == "streamstudio":
-                filename += ".streamstudio"
-
-            f=open(filename,'r')
-            for pipeline in f.readlines():
-                pipeline=pipeline[:-1]
-                if pipeline not in self.pipelines:
-                    self._add_viewer(pipeline)
-                else:
-                    self._alert_message("(%s) pipeline already active" % pipeline)
-            f.close()
-
-        elif response == Gtk.RESPONSE_CANCEL:
-              self._alert_message('pipelines\' configuration file opening aborted')
-        fs.destroy()
+        import os
+        self._open_dialog(
+            'Choose a file to open',
+            [
+                ('All files', '*'),
+            ],
+            os.path.expanduser('~'),
+            self._on_video_source_device_selection)
 
     def save(self):
         if not len(self.pipelines):
