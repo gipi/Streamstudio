@@ -670,6 +670,9 @@ class StreamStudioSource(PadPipeline):
             (GObject.TYPE_INT, GObject.TYPE_FLOAT,)
         )
     }
+    WIDTH = 320
+    HEIGHT = 200
+    FRAMERATE = 10
 
     def __init__(self, *args):
         super(StreamStudioSource, self).__init__(*args)
@@ -711,9 +714,18 @@ class StreamStudioSource(PadPipeline):
         """Return a list of element to link in the given order. The last one
         is to link with the pad.
         """
+        filtr = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1' % 
+            (self.WIDTH, self.HEIGHT, self.FRAMERATE)
+        )
         return [
             Gst.ElementFactory.make('tee', None), [
-                [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('autovideosink', None),],
+                [
+                    Gst.ElementFactory.make('queue', None),
+                    Gst.ElementFactory.make('videoscale', None),
+                    Gst.ElementFactory.make('videorate', None),
+                    filtr,
+                    Gst.ElementFactory.make('autovideosink', None),
+                ],
                 [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('appsink', None),],
             ]
         ]
