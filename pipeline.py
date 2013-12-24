@@ -711,7 +711,7 @@ class StreamStudioSource(PadPipeline):
             ]
         ]
     def _build_video_branch(self):
-        """Return a list of element to link in the given order. The last one
+        """Return a list of element to link in the given order. The first one
         is to link with the pad.
         """
         filtr = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1' % 
