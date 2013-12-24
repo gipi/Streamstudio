@@ -334,6 +334,53 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
 
             vi.connect('volume-change', _cb_on_volume_change)
 
+class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):
+    __gsignals__ = {
+        'activated': (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            ()
+        ),
+    }
+    main_class = 'window'
+    main_container_class = 'box1'
+    def __init__(self, pipeline):
+        GObject.GObject.__init__(self)
+        if not isinstance(pipeline, StreamStudioOutput):
+            raise TypeError('we need StreamStudioOutput instance not %s' % pipeline)
+
+        self._build_gui()
+
+        self.da = self._get_ui_element_by_name('drawingarea')
+
+        self.pipeline = pipeline
+
+        self._connect_signal()
+
+    def _connect_signal(self):
+        self.pipeline.connect('set-sink', self._on_set_sink)
+        self._get_main_class().connect('delete-event', self._on_quit)
+
+    def _on_set_sink(self, pipeline, imagesink):
+        Gdk.threads_enter()
+        try:
+            xid = self.da.get_property('window').get_xid()
+            assert xid
+            Gdk.flush()
+            imagesink.set_property("force-aspect-ratio", True)
+            imagesink.set_window_handle(xid)
+
+            self.emit('activated')
+        except Exception, e:
+            logger.exception(e)
+        finally:
+            Gdk.threads_leave()
+
+    def _on_quit(self, window, event):
+        Gtk.main_quit()
+
+
+
 if __name__ == '__main__':
     GObject.threads_init()
     Gst.init(None)
