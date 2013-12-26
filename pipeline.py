@@ -748,7 +748,26 @@ class StreamStudioOutput(BasePipeline):
     """Pipeline used to finally produce the streaming needed."""
 
     def __init__(self):
-        super(StreamStudioOutput, self).__init__('videotestsrc ! autovideosink')
+        super(StreamStudioOutput, self).__init__('input-selector name=i ! autovideosink appsrc ! videoconvert ! i. videotestsrc ! videoconvert ! i.')
+
+        self._input_selector = self.player.get_by_name('i')
+        self._test_src_pad = self._input_selector.get_static_pad('sink_0')
+        self._app_src_pad = self._input_selector.get_static_pad('sink_1')
+
+        assert self._input_selector
+        assert self._test_src_pad
+        assert self._app_src_pad
+
+    def enable_external_sources(self):
+        """Switch the pipeline to use the appsrc stream"""
+        self.switch(True)
+
+    def switch(self, enable):
+        logger.debug('switch %s' % enable)
+        self._input_selector.set_property('active-pad', self._app_src_pad if enable else self._test_src_pad)
+
+    def disable_exteral_sources(self):
+        self.switch(False)
 
 import cmd
 
