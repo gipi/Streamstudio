@@ -256,18 +256,9 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         Gtk.main_quit()
 
     def _on_set_sink(self, pipeline, imagesink):
-        Gdk.threads_enter()
-        videoinput = VideoInput()
-        videoinput.reparent_in(self._monitor_container)
-        Gdk.threads_leave()
+        _type, stream_id = pipeline._get_stream_id_from_element(imagesink)
 
-        videoinput.set_sink(imagesink)
-        Gdk.threads_enter()
-
-        videoinput.show_all()
-        # this is MUST stay here otherwise the old window is not destroyed
-        videoinput._get_main_class().destroy()
-        Gdk.threads_leave()
+        self._video_streams[stream_id - 1].set_sink(imagesink)
 
     def _on_no_more_streams(self, pipeline):
         self.emit('initializated')
@@ -318,9 +309,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         self._start_seek_polling()
 
     def _on_stream_added(self, pipeline, stream_type, count):
-        """Use this to set the volume GUI, I know is asymetric with respect
-        to the video streams but it's a wild world
-        """
+        """Use this to configure the GUI for each stream."""
         logger.debug('_on_stream_added %s-%d' % (stream_type, count,))
         if stream_type == 'audio':
             Gdk.threads_enter()
@@ -336,6 +325,20 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
                 self.pipeline.set_volume_for_stream(count, value)
 
             vi.connect('volume-change', _cb_on_volume_change)
+        elif stream_type == 'video':
+            Gdk.threads_enter()
+
+            videoinput = VideoInput()
+            videoinput.reparent_in(self._monitor_container)
+
+            videoinput.show_all()
+            # this is MUST stay here otherwise the old window is not destroyed
+            videoinput._get_main_class().destroy()
+
+            Gdk.threads_leave()
+
+            self._video_streams[count] = videoinput
+
 
 class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):
     __gsignals__ = {
