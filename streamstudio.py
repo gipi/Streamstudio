@@ -224,6 +224,11 @@ class StreamStudio(GuiMixin):
         self._output_pipeline.kill()
         Gtk.main_quit()
 
+    def run(self):
+        self.show_all()
+
+        Gtk.main()
+
 def usage(progname):
     print """usage: %s [video1 video2 ...]
     """ % progname
@@ -234,5 +239,4 @@ if __name__ == '__main__':
     Gdk.threads_init()
 
     a = StreamStudio()
-    a.show_all()
-    Gtk.main()
+    a.run()
