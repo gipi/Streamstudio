@@ -46,7 +46,7 @@ class StreamStudio(GuiMixin):
             finally:
                 pass
 
-        self._output_widget.connect('activated', __cb_on_activated)
+        self._output_widget.connect('initializated', __cb_on_activated)
 
     def _start_initial_pipeline(self):
         self._output_pipeline.play()
@@ -62,7 +62,7 @@ class StreamStudio(GuiMixin):
             w.reparent_in(self.sources_vbox)
             Gdk.threads_leave()
 
-        w.connect('activated', __cb_on_activated)
+        w.connect('initializated', __cb_on_activated)
 
         p.play()
 

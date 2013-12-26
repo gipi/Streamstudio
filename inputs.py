@@ -211,7 +211,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
     When the stream has finished, the window emit the signal blabla
     """
     __gsignals__ = {
-        'activated': (
+        'initializated': (
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_NONE,
             ()
@@ -270,7 +270,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         Gdk.threads_leave()
 
     def _on_no_more_streams(self, pipeline):
-        self.emit('activated')
+        self.emit('initializated')
 
     def _on_level_change(self, pipeline, stream_id, level_value):
         Gdk.threads_enter()
@@ -339,7 +339,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
 
 class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):
     __gsignals__ = {
-        'activated': (
+        'initializated': (
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_NONE,
             ()
@@ -373,7 +373,7 @@ class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):
             imagesink.set_property("force-aspect-ratio", True)
             imagesink.set_window_handle(xid)
 
-            self.emit('activated')
+            self.emit('initializated')
         except Exception, e:
             logger.exception(e)
         finally:
