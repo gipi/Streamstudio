@@ -28,17 +28,18 @@ class StreamStudio(GuiMixin):
 
         self._pipeline_sources = []
 
-        self._configure_initial_pipeline()
-        self._start_initial_pipeline()
+        def __cb_on_show_event(w):
+            self._configure_initial_pipeline()
+            self._start_initial_pipeline()
+
+        self._get_main_class().connect('show', __cb_on_show_event)
 
     def _configure_initial_pipeline(self):
         """Create the output pipeline"""
         self._output_pipeline = pipeline.StreamStudioOutput()
         self._output_widget = inputs.StreamStudioMonitorOutput(self._output_pipeline)
 
-        self._output_widget.show_all()
-
-        def __cb_on_activated(ssmo):
+        def __cb_on_show(ssmo):
             try:
                 self._output_widget.reparent_in(self._main_monitor_container)
             except Exception as e:
@@ -46,7 +47,9 @@ class StreamStudio(GuiMixin):
             finally:
                 pass
 
-        self._output_widget.connect('initializated', __cb_on_activated)
+        self._output_widget._get_main_class().connect('show', __cb_on_show)
+
+        self._output_widget.show_all()
 
     def _start_initial_pipeline(self):
         self._output_pipeline.play()
@@ -55,6 +58,14 @@ class StreamStudio(GuiMixin):
         p = pipeline.StreamStudioSource(filename)
         w = inputs.StreamStudioMonitorInput(p)
 
+        def __cb_on_show(ssmo):
+            # here we don't need Gdk.threads_enter()/leave()
+            # since it's called from the right thread
+            w.reparent_in(self.sources_vbox)
+        w._get_main_class().connect('show', __cb_on_show)
+        w.show_all()
+
+        p.play()
         w.show_all()
 
         def __cb_on_activated(ssmo):
