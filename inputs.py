@@ -48,15 +48,20 @@ class VideoInput(GObject.GObject, GuiMixin):
         self.btn_activate = self._get_ui_element_by_name('btn_activate')
         self.btn_remove = self._get_ui_element_by_name('btn_remove')
 
+        self._cb_activated = self._get_ui_element_by_name('cb_active')
+
         assert self.da
         assert self._main_container
         assert self.btn_activate
         assert self.btn_remove
+        assert self._cb_activated
 
         self._get_main_class().connect('delete-event', self._on_delete_event)
 
         self.btn_activate.connect('clicked', self._on_action_active)
         self.btn_remove.connect('clicked', self._on_action_remove)
+
+        self._cb_handler_id = self._cb_activated.connect('toggled', self._on_activated)
 
     def reparent_in(self, container):
         logger.debug('reparenting %s with %s' %
@@ -101,6 +106,22 @@ class VideoInput(GObject.GObject, GuiMixin):
     def remove(self):
         # TODO: remove itself or emit only the signals?
         self.emit('removed', 100)
+
+    def _on_activated(self, checbox):
+        """The stream can be activated but not the reverse"""
+        # disconnect this callback otherwise when another monitor
+        # deselects this we gonna having problem
+        checbox.disconnect(self._cb_handler_id)
+
+        checbox.set_sensitive(False)
+        self.emit('monitor-activated')
+
+
+    def deselect(self):
+        self._cb_activated.set_sensitive(True)
+        self._cb_activated.set_active(False)
+
+        self._cb_handler_id = self._cb_activated.connect('toggled', self._on_activated)
 
 class VideoSeekableInput(VideoInput):
     """Manage the GUI of a seekable input"""
@@ -238,6 +259,10 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         self._audio_streams = {}
         self._video_streams = {}
 
+        # take memory of audio/video stream selected
+        self._video_stream_selected = None
+        self._audio_stream_selected = None
+
     def _connect_signals(self):
         self.pipeline.connect('stream-added', self._on_stream_added)
         self.pipeline.connect('set-sink', self._on_set_sink)
@@ -335,9 +360,21 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
             # this is MUST stay here otherwise the old window is not destroyed
             videoinput._get_main_class().destroy()
 
+            def __cb_on_monitor_activated(vi):
+                self._video_stream_selected = vi
+                self.emit('video-stream-selected', count)
+
+            videoinput.connect('monitor-activated', __cb_on_monitor_activated)
+
             Gdk.threads_leave()
 
             self._video_streams[count] = videoinput
+
+    def deselect_video(self):
+        self._video_stream_selected.deselect()
+
+    def deselect_audio(self):
+        self._audio_stream_selected.deselect()
 
 
 class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):

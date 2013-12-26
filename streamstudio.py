@@ -29,6 +29,9 @@ class StreamStudio(GuiMixin):
         self._pipeline_sources = []
         self._gui_inputs = []
 
+        self._gui_video_selected = None
+        self._gui_audio_selected = None
+
         def __cb_on_show_event(w):
             self._configure_initial_pipeline()
             self._start_initial_pipeline()
@@ -63,7 +66,18 @@ class StreamStudio(GuiMixin):
             # here we don't need Gdk.threads_enter()/leave()
             # since it's called from the right thread
             w.reparent_in(self.sources_vbox)
+        def __cb_on_video_stream_activated(monitorinput, stream_id):
+            logger.info('selected stream %d from %s' %
+                (stream_id, p,)
+            )
+            if self._gui_video_selected is not None:
+                self._gui_video_selected.deselect_video()
+
+            self._gui_video_selected = monitorinput
+
         w._get_main_class().connect('show', __cb_on_show)
+        w.connect('video-stream-selected', __cb_on_video_stream_activated)
+
         w.show_all()
 
         self._gui_inputs.append(w)
