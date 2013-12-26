@@ -241,6 +241,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
     def _connect_signals(self):
         self.pipeline.connect('stream-added', self._on_stream_added)
         self.pipeline.connect('set-sink', self._on_set_sink)
+        self.pipeline.connect('no-more-streams', self._on_no_more_streams)
         self.pipeline.connect('level-change', self._on_level_change)
 
         # attach the onclick
@@ -268,6 +269,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
         videoinput._get_main_class().destroy()
         Gdk.threads_leave()
 
+    def _on_no_more_streams(self, pipeline):
         self.emit('activated')
 
     def _on_level_change(self, pipeline, stream_id, level_value):

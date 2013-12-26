@@ -497,7 +497,13 @@ class PadPipeline(BasePipeline):
             GObject.TYPE_NONE,
             (GObject.TYPE_STRING, GObject.TYPE_INT,)
         ),
+        'no-more-streams': (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (),
+        ),
     }
+
     def __init__(self, location):
         self._location = location
         super(PadPipeline, self).__init__(self._build_pipeline_string())
@@ -524,6 +530,7 @@ class PadPipeline(BasePipeline):
         self.audiosink = self.player.get_by_name('audiosink')
 
         self.decode.connect("pad-added", self._on_dynamic_pad)
+        self.decode.connect("no-more-pads", self._on_no_more_pads)
 
         #self.player.set_state(Gst.State.PAUSED)
 
@@ -535,6 +542,9 @@ class PadPipeline(BasePipeline):
             self._on_audio_dynamic_pad(dbin, pad)
         elif caps.startswith('video'):
             self._on_video_dynamic_pad(dbin, pad)
+
+    def _on_no_more_pads(self, decode):
+        self.emit('no-more-streams')
 
     def _build_video_branch(self):
         """Return a list of element to link in the given order. The last one
