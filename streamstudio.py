@@ -27,6 +27,7 @@ class StreamStudio(GuiMixin):
         self.sources_vbox = self._get_ui_element_by_name('box3')
 
         self._pipeline_sources = []
+        self._gui_inputs = []
 
         def __cb_on_show_event(w):
             self._configure_initial_pipeline()
@@ -64,6 +65,8 @@ class StreamStudio(GuiMixin):
             w.reparent_in(self.sources_vbox)
         w._get_main_class().connect('show', __cb_on_show)
         w.show_all()
+
+        self._gui_inputs.append(w)
 
         p.play()
         w.show_all()

@@ -734,7 +734,7 @@ class StreamStudioSource(PadPipeline):
                     Gst.ElementFactory.make('videoscale', None),
                     Gst.ElementFactory.make('videorate', None),
                     filtr,
-                    Gst.ElementFactory.make('autovideosink', None),
+                    Gst.ElementFactory.make('xvimagesink', None),
                 ],
                 [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('appsink', None),],
             ]
