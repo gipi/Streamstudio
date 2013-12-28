@@ -424,12 +424,16 @@ class StreamStudioSource(PadPipeline):
                 [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('appsink', None),],
             ]
         ]
+
     def _build_video_branch(self):
         """Return a list of element to link in the given order. The first one
         is to link with the pad.
         """
         filtr = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1' % 
             (self.WIDTH, self.HEIGHT, self.FRAMERATE)
+        )
+        filtr_sink = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1,format=(string)RGB16' %
+            (conf.get_output_width(), conf.get_output_height(), conf.get_fps())
         )
         self._video_app_sink = Gst.ElementFactory.make('appsink', None)
         return [
@@ -443,6 +447,10 @@ class StreamStudioSource(PadPipeline):
                 ],
                 [
                     Gst.ElementFactory.make('queue', None),
+                    Gst.ElementFactory.make('videoscale', None),
+                    Gst.ElementFactory.make('videorate', None),
+                    Gst.ElementFactory.make('videoconvert', None),
+                    filtr_sink,
                     self._video_app_sink,
                 ],
             ]
