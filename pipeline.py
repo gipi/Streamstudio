@@ -1,21 +1,6 @@
 #!/usr/bin/env python
 """
-Main class to manage gstreamer pipelines construction.
-
-    >>> p = Pipeline()
-    >>> gobject.threads_init()
-    >>> p.play()
-
-(GObject.threads_init() is mandatory otherwise a segfault will happen).
-
-After this three little windows pop up; you can switch between them using the switch_to() function
-
-The BasePipeline class has two signals associated with it
-
- - set-sink: when the autovideosink looks for an xwindow output the instance ask if someone
-             want to be a sink (if no one responds then open a default window)
-
- - error: some errors happened
+Main classes to manage gstreamer pipelines construction.
 """
 import os
 from sslog import logger
@@ -36,7 +21,21 @@ print Gst.version_string()
 
 
 class BasePipeline(GObject.GObject):
-    """Base class to manage GStreamer pipelines"""
+    """Base class to manage GStreamer pipelines.
+    
+    This is used to create quick and dirty pipelines, passing as argument
+    to the constructor the string with the desired pipeline.
+
+     >>> bp = BasePipeline('videotestsrc pattern=18 ! autovideosink')
+     >>> bp.play()
+
+    To avoid unwanted crash remember to initialize all the threading stuffs before.
+
+    The instances expose two signals, 'error' and 'set-sink': the first of course is
+    to signal errors happening and the last is emitted when the pipeline is tell us
+    that a window will opened to handle some video stream; intercepting it we can
+    use an our window.
+    """
     __gsignals__ = {
         'error': (
             GObject.SIGNAL_RUN_LAST,
@@ -50,6 +49,7 @@ class BasePipeline(GObject.GObject):
             (GObject.TYPE_OBJECT,)
         )
     }
+
     def __init__(self, pipeline_string):
         import sys
         Gst.init_check(sys.argv)
@@ -168,8 +168,18 @@ def _quote_spaces(location):
     return location.replace(' ', '\ ').replace('(', '\(').replace(')', '\)')
 
 class PadPipeline(BasePipeline):
-    """This pipeline use internally decodebin to create at runtime
-    the needed pads
+    """Pipeline that decodes streams contained into a file and add automatically
+    the needed elements in order to use these.
+
+    The constructor takes one parameter that is the path to the local resource to
+    use to build the pipeline.
+
+    For each stream found the signal 'stream-added' is emitted with the stream type
+    ('audio' or 'video') and the internal id used to reference it later. Subclasses
+    should implement methods _build_video_branch() and _build_audio_branch() if
+    the default elements added to the pipeline are not enough for their purposes.
+
+    When no more streams are present the signal 'no-more-streams' is emitted.
     """
     __gsignals__ = {
         'stream-added': (
@@ -350,15 +360,13 @@ class StreamStudioSource(PadPipeline):
 
     It's a pipeline having a monitor for each one stream made available from the original
     resource associated with a appsink element
-
-    TODO: listen to volume element by messages?
     """
     __gsignals__ = {
-        'level-change': (
+        'level-change': (# when the audio level change
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_NONE,
             (GObject.TYPE_INT, GObject.TYPE_FLOAT,)
-        )
+        ),
     }
     WIDTH = 320
     HEIGHT = 200
