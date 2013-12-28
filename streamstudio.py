@@ -12,12 +12,154 @@ from gui import GuiMixin
 
 from gi.repository import Gtk, GObject, Gdk, Gst
 import pipeline
+# lock use inspired from this <https://github.com/kivy/kivy/blob/31ba89c6c7661dcc6fa6916b46be8a0381874e5c/kivy/core/video/video_gstreamer.py>
+from threading import Lock
 
 print 'Gtk %d.%d.%d' % (
     Gtk.get_major_version(),
     Gtk.get_minor_version(),
     Gtk.get_micro_version(),
 )
+
+class SourceController(GObject.GObject):
+    """Link together the trasmitting appsink with the output's appsrc.
+
+    To initialize it you must pass an instance of StreamStudioOutput pipeline
+    as argument in its constructor.
+
+     >>> op = StreamStudioOutput()
+     >>> sc = SourceController(sc)
+
+    This controller allows two states of trasmission: a state called 'carosello'
+    that is a test state, showing an alternating white/black screen and the real
+    trasmitting state where the output came from the appsink.
+
+    To switch between these two states you can use the switch_to_carosello() method
+
+     >>> sc.switch_to_carosello(True)
+
+    In order to enable/change the trasmitting StreamStudioSource you have to use
+    the swap_source() method, passing the pipeline's appsink you want to transmit.
+
+     >>> ip = StreamStudioSource('whatever.mp4')
+     >>> ip.play()
+     >>> sc.swap_source(ip.get_video_src())
+    """
+    def __init__(self, output_pipeline):
+        GObject.GObject.__init__(self)
+
+        self._output = output_pipeline
+        self._actual_input = None
+
+        self._src_handler_id = None
+
+        self._check_data_id = None
+        self.timestamp = 0
+
+        self._is_carosello = True
+        self.isWhite = True
+
+        self._data = None
+        self._lock = Lock()
+
+        self._output.get_video_src().connect('need-data', self._on_need_data)
+        self._output.get_video_src().connect('enough-data', self._on_enough_data)
+
+        GObject.timeout_add_seconds(1, self._switch_color)
+
+    def _switch_color(self):
+        self.isWhite = not self.isWhite
+
+        return True
+
+    def _dump(self, width, height, depth, isWhite):
+        """Return a black/white buffer"""
+        # http://gstreamer.freedesktop.org/data/doc/gstreamer/head/manual/html/section-data-spoof.html#section-spoof-appsrc
+        size = width * height * depth
+        bffer = Gst.Buffer.new_allocate(None, size, None)
+
+        bffer.memset(0, 0x00 if isWhite else 0xff, size)
+
+        bffer.pts = self.timestamp
+        bffer.duration = Gst.util_uint64_scale_int(1, Gst.SECOND, 30)
+
+        # NOTE: if you remove this line below the stream after the first
+        # switch doesn't re-switch and the stream appears lagging
+        self.timestamp += bffer.duration
+
+        return bffer
+
+    def _on_need_data(self, appsrc, *args):
+        #logger.debug('need data')
+        if not self._check_data_id:
+            self._check_data_id = GObject.idle_add(self._push_data, appsrc)
+
+    def _on_enough_data(self, appsrc):
+        logger.debug('enough data')
+        if self._check_data_id:
+            GObject.source_remove(self._check_data_id)
+            self._check_data_id = None
+
+    def _on_new_sample(self, appsink):
+        with self._lock:
+            bffer = appsink.emit('pull-sample')
+            self._data = bffer
+
+        logger.debug('pull-sample: %s' % self._data)
+
+    def _copy_from_data(self):
+        with self._lock:
+            if not self._data:
+                return None
+
+            bffer = self._data.get_buffer().copy()
+
+            self._data = None
+
+        try:
+            bffer.pts = self.timestamp
+        except ValueError as e:
+            logger.error('%d' % self.timestamp)
+            Gtk.main_quit()
+
+        self.timestamp += bffer.duration
+
+        return bffer
+
+    def _push_data(self, source):
+        bff = self._copy_from_data() if not self._is_carosello else self._dump(conf.get_output_width(), conf.get_output_height(), 2, self.isWhite)
+
+        if bff is None:
+            return True
+
+        result  = source.emit('push-buffer', bff)
+        logger.debug('pushed %s %s' % (result, bff))
+
+        if result != Gst.FlowReturn.OK:
+            logger.debug('error on on_need_data: %s' % result)
+            Gtk.main_quit()
+
+        return True
+
+    def swap_source(self, appsink):
+        """Change the trasmitting appsink"""
+        logger.debug('swap source to show %s' % appsink)
+        if self._src_handler_id is not None:
+            self._actual_input.disconnect(self._src_handler_id)
+            self._actual_input.set_property('emit-signals', False)
+
+            self._src_handler_id = None
+
+        self._actual_input = appsink
+        self._src_handler_id = self._actual_input.connect('new-sample', self._on_new_sample)
+        self._actual_input.set_property('emit-signals', True)
+
+    def switch_to_carosello(self, enable):
+        """Change from carosello to trasmitting state"""
+        self._is_carosello = enable
+
+    def is_carosello(self):
+        return self._is_carosello
 
 class StreamStudio(GuiMixin):
     main_class = 'ssWindow'
