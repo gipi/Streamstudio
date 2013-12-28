@@ -21,6 +21,8 @@ print 'Gtk %d.%d.%d' % (
     Gtk.get_micro_version(),
 )
 
+conf = Configuration()
+
 class SourceController(GObject.GObject):
     """Link together the trasmitting appsink with the output's appsrc.
 

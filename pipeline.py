@@ -6,6 +6,7 @@ import os
 from sslog import logger
 from utils import flatten
 from gi.repository import Gst, GObject
+from conf import Configuration
 
 print 'GObject v%s' % GObject._version
 print 'PyGObject v%s' % (
@@ -19,6 +20,7 @@ import platform; print 'python', platform.python_version()
 print Gst.version_string()
 
 
+conf = Configuration()
 
 class BasePipeline(GObject.GObject):
     """Base class to manage GStreamer pipelines.
