@@ -178,6 +178,14 @@ class StreamStudio(GuiMixin):
             self._configure_initial_pipeline()
             self._start_initial_pipeline()
 
+            self._switch_controller = SourceController(self._output_pipeline)
+
+            def __cb_on_switch(monitor_output, enable):
+                self._switch_controller.switch_to_carosello(enable)
+
+            # connect the carosello/real stream switch with the controller
+            self._output_widget.connect('switch', __cb_on_switch)
+
         self._get_main_class().connect('show', __cb_on_show_event)
 
     def _configure_initial_pipeline(self):
@@ -216,6 +224,8 @@ class StreamStudio(GuiMixin):
                 self._gui_video_selected.deselect_video()
 
             self._gui_video_selected = monitorinput
+
+            self._switch_controller.swap_source(p.get_video_src())
 
         w._get_main_class().connect('show', __cb_on_show)
         w.connect('video-stream-selected', __cb_on_video_stream_activated)
