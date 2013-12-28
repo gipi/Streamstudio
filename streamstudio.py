@@ -14,6 +14,7 @@ from gi.repository import Gtk, GObject, Gdk, Gst
 import pipeline
 # lock use inspired from this <https://github.com/kivy/kivy/blob/31ba89c6c7661dcc6fa6916b46be8a0381874e5c/kivy/core/video/video_gstreamer.py>
 from threading import Lock
+from conf import Configuration
 
 print 'Gtk %d.%d.%d' % (
     Gtk.get_major_version(),
