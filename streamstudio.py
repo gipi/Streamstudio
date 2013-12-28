@@ -218,6 +218,7 @@ class StreamStudio(GuiMixin):
             # here we don't need Gdk.threads_enter()/leave()
             # since it's called from the right thread
             w.reparent_in(self.sources_vbox)
+
         def __cb_on_video_stream_activated(monitorinput, stream_id):
             logger.info('selected stream %d from %s' %
                 (stream_id, p,)
@@ -237,14 +238,33 @@ class StreamStudio(GuiMixin):
         self._gui_inputs.append(w)
 
         p.play()
-        w.show_all()
+
+    def _add_device_source_pipeline(self, filename):
+        p = pipeline.V4L2StreamStudioSource(filename)
+        w = inputs.StreamStudioMonitorInput(p)
 
         def __cb_on_activated(ssmo):
             Gdk.threads_enter()
             w.reparent_in(self.sources_vbox)
             Gdk.threads_leave()
 
+        def __cb_on_video_stream_activated(monitorinput, stream_id):
+            logger.info('selected stream %d from %s' %
+                (stream_id, p,)
+            )
+            if self._gui_video_selected is not None:
+                self._gui_video_selected.deselect_video()
+
+            self._gui_video_selected = monitorinput
+
+            self._switch_controller.swap_source(p.get_video_src())
+
         w.connect('initializated', __cb_on_activated)
+        w.connect('video-stream-selected', __cb_on_video_stream_activated)
+
+        w.show_all()
+
+        self._gui_inputs.append(w)
 
         p.play()
 
@@ -269,11 +289,15 @@ class StreamStudio(GuiMixin):
     def _on_delete_event(self, window, event):
         self.quit()
 
+    def _on_video_source_file_selection(self, filename):
+        self._add_source_pipeline(filename)
+
     def _on_video_source_device_selection(self, filename):
         """
         When the selection is successfully then get the filename
         create the proper pipeline and pass it to self._control_pipeline. 
         """
+        self._add_device_source_pipeline(filename)
 
     def _alert_message(self, message):
         self.statusbar.push(self._menu_cix,message)
@@ -347,7 +371,7 @@ class StreamStudio(GuiMixin):
                 ('All files', '*'),
             ],
             os.path.expanduser('~'),
-            self._on_video_source_device_selection)
+            self._on_video_source_file_selection)
 
     def save(self):
         if not len(self.pipelines):
