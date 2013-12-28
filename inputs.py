@@ -237,6 +237,16 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
             GObject.TYPE_NONE,
             ()
         ),
+        'video-stream-selected': (# when the select the video stream
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_INT,)
+        ),
+        'audio-stream-selected': (# when the select the video stream
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_INT,)
+        ),
     }
     main_class = 'ui_ssmonitorwindow'
     main_container_class = 'box1'
@@ -350,6 +360,7 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
                 self.pipeline.set_volume_for_stream(count, value)
 
             vi.connect('volume-change', _cb_on_volume_change)
+
         elif stream_type == 'video':
             Gdk.threads_enter()
 
