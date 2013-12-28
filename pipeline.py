@@ -727,6 +727,7 @@ class StreamStudioSource(PadPipeline):
         filtr = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1' % 
             (self.WIDTH, self.HEIGHT, self.FRAMERATE)
         )
+        self._video_app_sink = Gst.ElementFactory.make('appsink', None)
         return [
             Gst.ElementFactory.make('tee', None), [
                 [
@@ -736,9 +737,15 @@ class StreamStudioSource(PadPipeline):
                     filtr,
                     Gst.ElementFactory.make('xvimagesink', None),
                 ],
-                [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('appsink', None),],
+                [
+                    Gst.ElementFactory.make('queue', None),
+                    self._video_app_sink,
+                ],
             ]
         ]
+
+    def get_video_src(self):
+        return self._video_app_sink
 
 class V4L2StreamStudioSource(StreamStudioSource):
     def _build_pipeline_string(self):
@@ -767,6 +774,9 @@ class StreamStudioOutput(BasePipeline):
 
     def disable_exteral_sources(self):
         self.switch(False)
+
+    def get_video_src(self):
+        return self._app_src
 
 import cmd
 
