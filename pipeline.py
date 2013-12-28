@@ -194,6 +194,11 @@ class PadPipeline(BasePipeline):
             GObject.TYPE_NONE,
             (),
         ),
+        'prepare-video-stream-sink': (
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_OBJECT, GObject.TYPE_INT,)
+        ),
     }
 
     def __init__(self, location):
@@ -237,6 +242,15 @@ class PadPipeline(BasePipeline):
 
     def _on_no_more_pads(self, decode):
         self.emit('no-more-streams')
+
+    def _on_message_prepare_window_handle(self, message):
+        """Extend the normal method to pass also the stream id upstream"""
+        imagesink = message.src
+        tpe, stream_id = self._get_stream_id_from_element(imagesink)
+
+        super(PadPipeline, self)._on_message_prepare_window_handle(message)
+
+        self.emit('prepare-video-stream-sink', imagesink, stream_id)
 
     def _build_video_branch(self):
         """Return a list of element to link in the given order. The last one
