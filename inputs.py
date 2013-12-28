@@ -384,6 +384,11 @@ class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):
             GObject.TYPE_NONE,
             ()
         ),
+        'switch': (# tell us the output is switched in a final state (carosello/real stream)
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_BOOLEAN,)
+        ),
     }
     main_class = 'window'
     main_container_class = 'box1'
@@ -407,7 +412,7 @@ class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):
         self._get_main_class().connect('delete-event', self._on_quit)
 
     def _on_toggle_test(self, sw, *args):
-        self.pipeline.switch(self._switch_test.get_state() == Gtk.StateType.ACTIVE)
+       self.emit('switch', self._switch_test.get_state() == Gtk.StateType.ACTIVE)
 
     def _on_set_sink(self, pipeline, imagesink):
         Gdk.threads_enter()

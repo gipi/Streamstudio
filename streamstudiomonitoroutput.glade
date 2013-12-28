@@ -93,6 +93,7 @@
                       <object class="GtkSwitch" id="switch_test">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
+                        <property name="active">True</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>

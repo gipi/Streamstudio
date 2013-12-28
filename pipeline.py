@@ -748,15 +748,14 @@ class StreamStudioOutput(BasePipeline):
     """Pipeline used to finally produce the streaming needed."""
 
     def __init__(self):
-        super(StreamStudioOutput, self).__init__('input-selector name=i ! autovideosink appsrc ! videoconvert ! i. videotestsrc ! videoconvert ! i.')
+        super(StreamStudioOutput, self).__init__(
+            'appsrc name=source caps=video/x-raw,format=(string)RGB16,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1 ! videoconvert ! xvimagesink' %
+                (conf.get_output_width(), conf.get_output_height(), conf.get_fps())
+        )
 
-        self._input_selector = self.player.get_by_name('i')
-        self._test_src_pad = self._input_selector.get_static_pad('sink_0')
-        self._app_src_pad = self._input_selector.get_static_pad('sink_1')
+        self._app_src = self.player.get_by_name('source')
 
-        assert self._input_selector
-        assert self._test_src_pad
-        assert self._app_src_pad
+        assert self._app_src
 
     def enable_external_sources(self):
         """Switch the pipeline to use the appsrc stream"""
