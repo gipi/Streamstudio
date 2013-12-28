@@ -467,6 +467,15 @@ class RemoteStreamStudioSource(StreamStudioSource):
     def _build_pipeline_string(self):
         return 'souphttpsrc location=%s ! decodebin name=demux' % self._location
 
+class ImageStreamStudioSource(StreamStudioSource):
+    def _build_video_branch(self):
+        """Prepend a 'imagefreeze' element"""
+        elements = super(ImageStreamStudioSource, self)._build_video_branch()
+
+        elements.insert(0, Gst.ElementFactory.make('imagefreeze', None))
+
+        return elements
+
 class StreamStudioOutput(BasePipeline):
     """Pipeline used to finally produce the streaming needed."""
 
