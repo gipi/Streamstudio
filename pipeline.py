@@ -417,8 +417,8 @@ class StreamStudioSource(PadPipeline):
             Gst.ElementFactory.make('tee', None), [
                 [
                     Gst.ElementFactory.make('queue', None),
-                    Gst.ElementFactory.make('level', None),
                     volume,
+                    Gst.ElementFactory.make('level', None),
                     Gst.ElementFactory.make('autoaudiosink', None),
                 ],
                 [Gst.ElementFactory.make('queue', None), Gst.ElementFactory.make('appsink', None),],
