@@ -270,7 +270,7 @@ class PadPipeline(BasePipeline):
             ]
         ]
 
-    def _attach_branch_to_element(self, elements):
+    def _build_branches(self, elements):
         """Create a new branch starting from the given element.
 
         This method allows to create recursively a new branch: if the list passed
@@ -290,7 +290,7 @@ class PadPipeline(BasePipeline):
             # if we don't have a GstElement probably is a list
             if is_tee_mode and not isinstance(el, Gst.Element):
                 for tee_branches in el:
-                    to_link.link(self._attach_branch_to_element(tee_branches))
+                    to_link.link(self._build_branches(tee_branches))
 
                 break
             elif el.__gtype__.name == 'GstCaps':
@@ -322,7 +322,7 @@ class PadPipeline(BasePipeline):
         logger.debug('video pad detected')
 
         elements = self._build_video_branch()
-        sink = self._attach_branch_to_element(elements)
+        sink = self._build_branches(elements)
 
         # as said, the first element is connected to the source
         pad.link(sink.get_static_pad('sink'))
@@ -339,7 +339,7 @@ class PadPipeline(BasePipeline):
         logger.debug('audio pad detected')
 
         elements = self._build_audio_branch()
-        sink = self._attach_branch_to_element(elements)
+        sink = self._build_branches(elements)
 
         pad.link(sink.get_static_pad('sink'))
         logger.debug(' %s <=> %s' % 
