@@ -178,7 +178,7 @@ class PadPipeline(BasePipeline):
 
     For each stream found the signal 'stream-added' is emitted with the stream type
     ('audio' or 'video') and the internal id used to reference it later. Subclasses
-    should implement methods _build_video_branch() and _build_audio_branch() if
+    should implement methods _get_video_branch() and _build_audio_branch() if
     the default elements added to the pipeline are not enough for their purposes.
 
     When no more streams are present the signal 'no-more-streams' is emitted.
@@ -252,7 +252,7 @@ class PadPipeline(BasePipeline):
 
         self.emit('prepare-video-stream-sink', imagesink, stream_id)
 
-    def _build_video_branch(self):
+    def _get_video_branch(self):
         """Return a list of element to link in the given order. The last one
         is to link with the pad.
         """
@@ -321,7 +321,7 @@ class PadPipeline(BasePipeline):
     def _on_video_dynamic_pad(self, dbin, pad):
         logger.debug('video pad detected')
 
-        elements = self._build_video_branch()
+        elements = self._get_video_branch()
         sink = self._build_branches(elements)
 
         # as said, the first element is connected to the source
@@ -425,7 +425,7 @@ class StreamStudioSource(PadPipeline):
             ]
         ]
 
-    def _build_video_branch(self):
+    def _get_video_branch(self):
         """Return a list of element to link in the given order. The first one
         is to link with the pad.
         """
@@ -468,9 +468,9 @@ class RemoteStreamStudioSource(StreamStudioSource):
         return 'souphttpsrc location=%s ! decodebin name=demux' % self._location
 
 class ImageStreamStudioSource(StreamStudioSource):
-    def _build_video_branch(self):
+    def _get_video_branch(self):
         """Prepend a 'imagefreeze' element"""
-        elements = super(ImageStreamStudioSource, self)._build_video_branch()
+        elements = super(ImageStreamStudioSource, self)._get_video_branch()
 
         elements.insert(0, Gst.ElementFactory.make('imagefreeze', None))
 
