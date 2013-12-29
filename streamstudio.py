@@ -46,7 +46,7 @@ class SourceController(GObject.GObject):
 
      >>> ip = StreamStudioSource('whatever.mp4')
      >>> ip.play()
-     >>> sc.swap_source(ip.get_video_src())
+     >>> sc.swap_source(ip.enable_video_src())
     """
     def __init__(self, output_pipeline):
         GObject.GObject.__init__(self)
@@ -229,7 +229,7 @@ class StreamStudio(GuiMixin):
 
             self._gui_video_selected = monitorinput
 
-            self._switch_controller.swap_source(p.get_video_src())
+            self._switch_controller.swap_source(p.enable_video_src())
 
         w._get_main_class().connect('show', __cb_on_show)
         w.connect('video-stream-selected', __cb_on_video_stream_activated)
