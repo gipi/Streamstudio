@@ -3,7 +3,14 @@
 build a studio for lots of video/audio 
 input who generate a virtual webcam as output 
 
-More example in future.'''
+More example in future.
+Appsink will internally use a queue to collect buffers from the streaming thread.
+If the application is not pulling samples fast enough, this queue will consume a
+lot of memory over time. The "max-buffers" property can be used to limit the queue
+size. The "drop" property controls whether the streaming thread blocks or if older
+buffers are dropped when the maximum queue size is reached. Note that blocking the
+streaming thread can negatively affect real-time performance and should be avoided.
+'''
 
 import inputs
 import sys
