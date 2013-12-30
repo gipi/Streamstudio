@@ -151,22 +151,43 @@ class SourceController(GObject.GObject):
 
         return True
 
-    def swap_source(self, appsink):
-        """Change the trasmitting appsink"""
-        logger.debug('swap source to show %s' % appsink)
+    def _stop_actual_video_source(self):
         if self._src_handler_id is not None:
             self._actual_input.disconnect(self._src_handler_id)
             self._actual_input.set_property('emit-signals', False)
 
             self._src_handler_id = None
 
+    def _remove_actual_video_source(self):
+        self._actual_input = None
+
+    def _set_actual_video_input(self, appsink):
         self._actual_input = appsink
+    def _start_actual_video_input(self):
         self._src_handler_id = self._actual_input.connect('new-sample', self._on_new_sample)
         self._actual_input.set_property('emit-signals', True)
+    def swap_source(self, appsink):
+        """Change the trasmitting appsink"""
+        logger.debug('swap source to show %s' % appsink)
+
+        if not self.is_carosello() and self._actual_input is not None:
+            self._stop_actual_video_source()
+
+        self._remove_actual_video_source()
+
+        self._set_actual_video_input(appsink)
+
+        if not self.is_carosello():
+            self._start_actual_video_input()
 
     def switch_to_carosello(self, enable):
         """Change from carosello to trasmitting state"""
         self._is_carosello = enable
+
+        if enable:
+            self._stop_actual_video_source()
+        else:
+            self._start_actual_video_input()
 
     def is_carosello(self):
         return self._is_carosello
