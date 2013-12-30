@@ -105,17 +105,19 @@ class SourceController(GObject.GObject):
             self._check_data_id = GObject.idle_add(self._push_data, appsrc)
 
     def _on_enough_data(self, appsrc):
-        logger.debug('enough data')
-        if self._check_data_id:
-            GObject.source_remove(self._check_data_id)
-            self._check_data_id = None
+        self._remove_push_data_cb()
 
     def _on_new_sample(self, appsink):
         with self._lock:
             bffer = appsink.emit('pull-sample')
             self._data = bffer
 
+
         logger.debug('pull-sample: %s' % self._data)
+    def _remove_push_data_cb(self):
+        if self._check_data_id:
+            GObject.source_remove(self._check_data_id)
+            self._check_data_id = None
 
     def _copy_from_data(self):
         with self._lock:
