@@ -523,6 +523,8 @@ class StreamStudioSource(PadPipeline):
             if info.get_event() != Gst.EventType.EOS:
                 Gst.PadProbeReturn.OK
 
+            pad.remove_probe(self._video_appsink_eos_id)
+
             logger.debug('eos on pad %s' % pad)
 
             self._remove_elements(
