@@ -113,7 +113,6 @@ class SourceController(GObject.GObject):
             self._data = bffer
 
 
-        logger.debug('pull-sample: %s' % self._data)
     def _remove_push_data_cb(self):
         if self._check_data_id:
             GObject.source_remove(self._check_data_id)
@@ -145,7 +144,6 @@ class SourceController(GObject.GObject):
             return True
 
         result  = source.emit('push-buffer', bff)
-        logger.debug('pushed %s %s' % (result, bff))
 
         if result != Gst.FlowReturn.OK:
             logger.debug('error on on_need_data: %s' % result)
@@ -183,6 +181,7 @@ class StreamStudio(GuiMixin):
         self._pipeline_sources = []
         self._gui_inputs = []
 
+        self._pipeline_video_selected = None
         self._gui_video_selected = None
         self._gui_audio_selected = None
 
@@ -236,7 +235,11 @@ class StreamStudio(GuiMixin):
             if self._gui_video_selected is not None:
                 self._gui_video_selected.deselect_video()
 
+            if self._pipeline_video_selected is not None:
+                self._pipeline_video_selected.disable_video_src()
+
             self._gui_video_selected = monitorinput
+            self._pipeline_video_selected = p
 
             self._switch_controller.swap_source(p.enable_video_src())
 
