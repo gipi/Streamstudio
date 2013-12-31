@@ -18,9 +18,9 @@ FUNCTIONALITY
 
 Quick start:
 
-  $ git clone https://github.com/gipi/Streamstudio.git
-  $ cd Streamstudio
-  $ python streamstudio.py
+    $ git clone https://github.com/gipi/Streamstudio.git
+    $ cd Streamstudio
+    $ python streamstudio.py
 
 Below a screenshot of the main GUI
 
