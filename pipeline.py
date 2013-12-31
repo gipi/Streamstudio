@@ -298,7 +298,11 @@ class PadPipeline(BasePipeline):
 
                 # http://delog.wordpress.com/2011/07/25/link-dynamic-pads-of-demuxer/
                 #  The state of these new elements needs to set to GST_STATE_PLAYING.
-                el.set_state(Gst.State.PLAYING)
+                r = el.sync_state_with_parent()
+
+                if not r:
+                    logger.error('syncing state failed for %s' % el)
+                    sys.exit(1)
 
             if to_link is not None:
                 logger.debug(' %s -> %s' % 
