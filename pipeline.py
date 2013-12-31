@@ -503,14 +503,12 @@ class StreamStudioSource(PadPipeline):
         """Calling this method we are attacching an appsink to the pipeline so that
         an external application can pull data from it
         """
-        self._video_valve.set_property('drop', False)
 
         return self._video_app_sink
 
     def disable_video_src(self):
         """Calling this method detach the branch created with enable_video_src()"""
         logger.debug('disable video src for %s' % self)
-        self._video_valve.set_property('drop', True)
 
 class V4L2StreamStudioSource(StreamStudioSource):
     def _build_pipeline_string(self):
