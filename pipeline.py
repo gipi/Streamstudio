@@ -445,7 +445,18 @@ class StreamStudioSource(PadPipeline):
         filtr = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1' % 
             (self.WIDTH, self.HEIGHT, self.FRAMERATE)
         )
+        filtr_sink = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1,format=(string)RGB16' %
+            (conf.get_output_width(), conf.get_output_height(), conf.get_fps())
+        )
+
         xvimagesink = Gst.ElementFactory.make('xvimagesink', None)
+
+        self._video_app_sink = Gst.ElementFactory.make('appsink', None)
+        self._video_app_sink.set_property('max-buffers', 2)
+        self._video_app_sink.set_property('drop', True)
+
+        self._video_valve = Gst.ElementFactory.make('valve', None)
+
         return [
             self._video_tee, [
                 [
@@ -455,48 +466,16 @@ class StreamStudioSource(PadPipeline):
                     filtr,
                     xvimagesink,
                 ],
+                [
+                    Gst.ElementFactory.make('queue', None),
+                    Gst.ElementFactory.make('videoscale', None),
+                    Gst.ElementFactory.make('videorate', None),
+                    Gst.ElementFactory.make('videoconvert', None),
+                    filtr_sink,
+                    self._video_valve,
+                    self._video_app_sink,
+                ],
             ]
-        ]
-
-    def _on_video_dynamic_pad(self, dbin, pad):
-        super(StreamStudioSource, self)._on_video_dynamic_pad(dbin, pad)
-
-        # save the src pad in the tee/appsink for attaching/detaching
-        self._video_tee_src_pad = self._video_tee.get_request_pad('src_1')
-
-        assert self._video_tee_src_pad
-
-    def _get_appsink_branch_elements(self):
-        """"When an appsink is requested this method creates the necessary elements"""
-        filtr_sink = Gst.Caps.from_string('video/x-raw,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1,format=(string)RGB16' %
-            (conf.get_output_width(), conf.get_output_height(), conf.get_fps())
-        )
-
-        queue = Gst.ElementFactory.make('queue', None)
-        videoscale = Gst.ElementFactory.make('videoscale', None)
-        videorate = Gst.ElementFactory.make('videorate', None)
-        videoconvert = Gst.ElementFactory.make('videoconvert', None)
-
-        self._video_app_sink = Gst.ElementFactory.make('appsink', None)
-        self._video_app_sink.set_property('max-buffers', 2)
-        self._video_app_sink.set_property('drop', True)
-
-        # FIXME: since Caps elements can be removed we create two separate lists
-        self._video_app_sink_branch_elements = [
-            queue,
-            videoscale,
-            videorate,
-            videoconvert,
-            self._video_app_sink,
-        ]
-
-        return [
-            queue,
-            videoscale,
-            videorate,
-            videoconvert,
-            filtr_sink,
-            self._video_app_sink,
         ]
 
     def _remove_elements(self, elements):
@@ -523,58 +502,15 @@ class StreamStudioSource(PadPipeline):
         """Calling this method we are attacching an appsink to the pipeline so that
         an external application can pull data from it
         """
-        elements = self._get_appsink_branch_elements()
-        self._video_tee.link(
-            self._build_branches(elements)
-        )
+        self._video_valve.set_property('drop', False)
 
-        self._video_appsink_pad = self._video_app_sink.get_static_pad('sink')
-
-        if self._video_appsink_pad is None:
-            logger.error('app sink pad not found')
-            sys.exit(1)
-
-        self.emit('sink-ready', self._video_app_sink)
+        return self._video_app_sink
 
     def disable_video_src(self):
         """Calling this method detach the branch created with enable_video_src()"""
         logger.debug('disable video src for %s' % self)
-        if self._video_app_sink is None:
-            raise RuntimeWarning('appsink not yet attached')
-            return
+        self._video_valve.set_property('drop', True)
 
-        def __cb_eos_probe(pad, info, user_data):
-            if info.get_event() != Gst.EventType.EOS:
-                Gst.PadProbeReturn.OK
-
-            pad.remove_probe(self._video_appsink_eos_id)
-
-            logger.debug('eos on pad %s' % pad)
-
-            self._remove_elements(
-                self._video_app_sink_branch_elements
-            )
-
-            self._video_app_sink = None
-            self._video_appsink_pad = None
-
-            return Gst.PadProbeReturn.DROP
-
-        def __cb_pad_probe(pad, info, user_data):
-            logger.debug('pad %s is blocked now' % pad)
-
-            pad.remove_probe(self._video_tee_probe_id)
-
-            self._video_appsink_eos_id = self._video_appsink_pad.add_probe(
-                Gst.PadProbeType.EVENT_DOWNSTREAM,
-                __cb_eos_probe,
-                None
-            )
-
-            return Gst.PadProbeReturn.OK
-
-        # add a pad probe and remove elements on the callback
-        self._video_tee_probe_id = self._video_tee_src_pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, __cb_pad_probe, None)
 class V4L2StreamStudioSource(StreamStudioSource):
     def _build_pipeline_string(self):
         return 'v4l2src device=%s ! decodebin name=demux' % self._location

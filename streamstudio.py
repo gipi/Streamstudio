@@ -171,64 +171,14 @@ class SourceController(GObject.GObject):
         """Change the trasmitting appsink"""
         logger.debug('swap source to pipeline %s' % pipeline)
 
-        """Steps:
-         1. block new pipeline
-         2. attach appsink
-         3. block old pipeline
-         4. detach appsink old pipeline
-         5. unblock new pipeline
-         6. unblock old pipeline
-        """
-        self._tmp_id = None
-        self._tmp_id_bis = None
-
-        self._tmp_id_tris = None
-
-        def __cb_on_block_old(old_pipe):
-            logger.debug('onn block old')
-            old_pipe.disconnect(self._tmp_id_tris)
-            old_pipe.disable_video_src()
-
-            self._start_actual_video_input()
-
-            self._actual_pipeline.unblock()
-
-            #old_pipe.unblock()
-
-        def __cb_on_sink_ready(pipe, appsink):
-            logger.debug('sink-ready received with %s' % appsink)
-            pipe.disconnect(self._tmp_id_bis)
-
-            _tmp_old_pipe = self._actual_pipeline
-
-            # if there is a old input going, block it and do stuffs when is really blocked
-            #if _tmp_old_pipe is not None:
-            #    self._tmp_id_tris = _tmp_old_pipe.connect('block', __cb_on_block_old)
-
+        if self._actual_input is not None:
+            self._actual_pipeline.disable_video_src()
             self._stop_actual_video_source()
-            # here the new input
-            self._actual_pipeline = pipe
-            self._set_actual_video_input(appsink)
 
-            #if not self.is_carosello():
-            self._start_actual_video_input()
+        self._actual_pipeline = pipeline
+        self._actual_input = self._actual_pipeline.enable_video_src()
 
-            if _tmp_old_pipe is not None:
-                _tmp_old_pipe.disable_video_src()
-
-            self._actual_pipeline.unblock()
-
-        def __cb_on_block(pipe):
-            logger.debug('on block from %s' % pipe)
-            pipeline.disconnect(self._tmp_id)
-
-            self._tmp_id_bis = pipe.connect('sink-ready', __cb_on_sink_ready)
-
-            pipe.enable_video_src()
-
-        self._tmp_id = pipeline.connect('block', __cb_on_block)
-
-        pipeline.block()
+        self._start_actual_video_input()
 
     def switch_to_carosello(self, enable):
         """Change from carosello to trasmitting state"""
