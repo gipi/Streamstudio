@@ -605,17 +605,6 @@ class StreamStudioOutput(BasePipeline):
 
         assert self._app_src
 
-    def enable_external_sources(self):
-        """Switch the pipeline to use the appsrc stream"""
-        self.switch(True)
-
-    def switch(self, enable):
-        logger.debug('switch %s' % enable)
-        self._input_selector.set_property('active-pad', self._app_src_pad if enable else self._test_src_pad)
-
-    def disable_exteral_sources(self):
-        self.switch(False)
-
     def get_video_src(self):
         return self._app_src
 
