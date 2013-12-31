@@ -423,7 +423,7 @@ class StreamStudioMonitorOutput(GObject.GObject, GuiMixin):
         self._get_main_class().connect('delete-event', self._on_quit)
 
     def _on_toggle_test(self, sw, *args):
-       self.emit('switch', self._switch_test.get_state() == Gtk.StateType.ACTIVE)
+       self.emit('switch', self._switch_test.get_state() != Gtk.StateType.ACTIVE)
 
     def _on_set_sink(self, pipeline, imagesink):
         Gdk.threads_enter()
