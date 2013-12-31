@@ -60,8 +60,8 @@ DEBUGGING GSTREAMER PART
 
 It's possible to debug internal pipelines using the
 
-  GST_DEBUG_DUMP_DOT_DIR=$PWD
-  GST_DEBUG="*:2,GST_CAPS:4"
+    GST_DEBUG_DUMP_DOT_DIR=$PWD
+    GST_DEBUG="*:2,GST_CAPS:4"
 
 environmental variables.
 
