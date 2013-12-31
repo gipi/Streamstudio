@@ -1,5 +1,6 @@
 from gi.repository import Gst
 import sys
+from sslog import logger
 
 def _ctrl_c_handling(pipeline):
     """
@@ -25,3 +26,10 @@ def flatten(l):
         else:
             yield el
 
+def _logme(f):
+    def __logme(*args, **kwargs):
+        logger.debug('-> %s' % f.func_name)
+        f(*args, **kwargs)
+        logger.debug('   %s -->' % f.func_name)
+
+    return __logme
