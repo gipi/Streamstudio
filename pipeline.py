@@ -532,7 +532,7 @@ class StreamStudioOutput(BasePipeline):
 
     def __init__(self):
         super(StreamStudioOutput, self).__init__(
-            'appsrc name=source caps=video/x-raw,format=(string)RGB16,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1 ! videoconvert ! xvimagesink' %
+            'appsrc name=source caps=video/x-raw,format=(string)RGB16,width=(int)%d,height=(int)%d,framerate=(fraction)%d/1 ! videoconvert ! timeoverlay ! xvimagesink sync=false' %
                 (conf.get_output_width(), conf.get_output_height(), conf.get_fps())
         )
 
