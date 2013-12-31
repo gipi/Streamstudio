@@ -233,6 +233,8 @@ class PadPipeline(BasePipeline):
             self._on_audio_dynamic_pad(dbin, pad)
         elif caps.startswith('video'):
             self._on_video_dynamic_pad(dbin, pad)
+        else:
+            logger.info('unhandled caps: %s' % caps)
 
     def _on_no_more_pads(self, decode):
         self.emit('no-more-streams')
