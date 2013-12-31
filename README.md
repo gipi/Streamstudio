@@ -1,11 +1,32 @@
-We would like to manage multiple video sources and switch
+We would like to manage multiple video/audio sources and switch
 through them using a GTK GUI but also from python command line.
+
+FUNCTIONALITY
+-------------
+
+ - [x] add stream contained in media file
+ - [ ] use v4l2 source
+ - [ ] create stream from images (png,jpeg,gif)
+ - [ ] remove input sources
+ - [ ] add pause/play for not live sources
+ - [x] switch between video sources
+ - [ ] switch between audio sources
+ - [x] visualize input audio level
+ - [x] visualize input audio volume
+ - [x] modify input audio volume
+ - [ ] save locally input and output
 
 Quick start:
 
   $ git clone https://github.com/gipi/Streamstudio.git
   $ cd Streamstudio
   $ python streamstudio.py
+
+Below a screenshot of the main GUI
+
+![screenshot](./screenshot.png)
+
+*Not all the button are functional*
 
 
 DEPENDENCIES
