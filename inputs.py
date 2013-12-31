@@ -44,7 +44,6 @@ class VideoInput(GObject.GObject, GuiMixin):
 
         self.da = self._get_ui_element_by_name('vi_drawingarea')
         self._main_container = self._get_ui_element_by_name('vi_main_container')
-        self._main_container.set_size_request(400, 320)
         self.btn_activate = self._get_ui_element_by_name('btn_activate')
         self.btn_remove = self._get_ui_element_by_name('btn_remove')
 
@@ -353,6 +352,9 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
 
             vi.reparent_in(self._monitor_container)
             vi._get_main_class().destroy()
+
+            self._monitor_container.set_child_packing(vi._get_ui_element_by_name('vi_main_container'), False, False, 0, Gtk.PackType.START)
+
             Gdk.threads_leave()
 
             self._audio_streams[count] = vi
@@ -368,6 +370,9 @@ class StreamStudioMonitorInput(GObject.GObject, GuiMixin):
             videoinput.reparent_in(self._monitor_container)
 
             videoinput.show_all()
+
+            self._monitor_container.set_child_packing(videoinput._get_ui_element_by_name('vi_main_container'), False, False, 0, Gtk.PackType.START)
+
             # this is MUST stay here otherwise the old window is not destroyed
             videoinput._get_main_class().destroy()
 

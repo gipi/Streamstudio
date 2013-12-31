@@ -192,7 +192,7 @@ class StreamStudio(GuiMixin):
     def __init__(self):
         self._build_gui()
         self._main_monitor_container = self._get_ui_element_by_name('frame1')
-        self.sources_vbox = self._get_ui_element_by_name('box3')
+        self.sources_vbox = self._get_ui_element_by_name('sources_container')
 
         self._pipeline_sources = []
         self._gui_inputs = []
