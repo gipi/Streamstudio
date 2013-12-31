@@ -111,9 +111,6 @@ class BasePipeline(GObject.GObject):
 
             message_name = message.get_structure().get_name()
 
-            logger.debug('sync: received message type \'%s\' with name \'%s\' from \'%s\'' % (
-                t.first_value_nick, message_name, message.src.get_name(),
-            ))
 
             if message_name == "prepare-window-handle":
                 self._on_message_prepare_window_handle(message)
@@ -124,9 +121,6 @@ class BasePipeline(GObject.GObject):
         def _cb(bus, message):
             t = message.type
             src = message.src
-            logger.debug('received message type \'%s\' from \'%s\'' % (
-                t.first_value_nick, src.get_name(),
-            ))
 
             if t == Gst.MessageType.EOS:
                 self.player.set_state(Gst.State.NULL)
