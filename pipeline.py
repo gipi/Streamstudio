@@ -383,6 +383,16 @@ class StreamStudioSource(PadPipeline):
             GObject.TYPE_NONE,
             (GObject.TYPE_INT, GObject.TYPE_FLOAT,)
         ),
+        'block': (# when sink is available to pull from
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            ()
+        ),
+        'sink-ready': (# when sink is available to pull from
+            GObject.SIGNAL_RUN_LAST,
+            GObject.TYPE_NONE,
+            (GObject.TYPE_OBJECT,)
+        ),
     }
     WIDTH = 320
     HEIGHT = 200
@@ -498,6 +508,17 @@ class StreamStudioSource(PadPipeline):
             el.set_state(Gst.State.NULL)
             self.player.remove(el)
 
+    def block(self):
+        def __cb_pad_probe(pad, info, user_data):
+            self.emit('block')
+
+            return Gst.PadProbeReturn.OK
+
+        self._video_tee_probe_id = self._video_tee_src_pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, __cb_pad_probe, None)
+
+    def unblock(self):
+        self._video_tee_src_pad.remove_probe(self._video_tee_probe_id)
+
     def enable_video_src(self):
         """Calling this method we are attacching an appsink to the pipeline so that
         an external application can pull data from it
@@ -508,16 +529,19 @@ class StreamStudioSource(PadPipeline):
         )
 
         self._video_appsink_pad = self._video_app_sink.get_static_pad('sink')
-        assert self._video_appsink_pad
 
-        return self._video_app_sink
+        if self._video_appsink_pad is None:
+            logger.error('app sink pad not found')
+            sys.exit(1)
+
+        self.emit('sink-ready', self._video_app_sink)
 
     def disable_video_src(self):
         """Calling this method detach the branch created with enable_video_src()"""
+        logger.debug('disable video src for %s' % self)
         if self._video_app_sink is None:
             raise RuntimeWarning('appsink not yet attached')
             return
-
 
         def __cb_eos_probe(pad, info, user_data):
             if info.get_event() != Gst.EventType.EOS:
