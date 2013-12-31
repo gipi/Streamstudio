@@ -123,17 +123,18 @@ class BasePipeline(GObject.GObject):
             src = message.src
 
             if t == Gst.MessageType.EOS:
+                logger.info('EOS for %s' % (src,))
                 self.player.set_state(Gst.State.NULL)
             elif t == Gst.MessageType.WARNING:
-                logger.debug(' %s' % (message.parse_warning(),))
+                logger.debug('WARNING for %s: %s' % (src, message.parse_warning(),))
             elif t == Gst.MessageType.QOS:
-                logger.debug(' %s' % (message.parse_qos(),))
+                logger.debug('qos for %s: %s' % (src, message.parse_qos(),))
             elif t == Gst.MessageType.STREAM_STATUS:
-                logger.debug(' %s' % (message.parse_stream_status(),))
+                logger.debug('STREAM_STATUS for %s: %s' % (src, message.parse_stream_status(),))
             elif t == Gst.MessageType.STATE_CHANGED:
                 old_state, new_state, pending = message.parse_state_changed()
-                logger.debug(' %s -> %s (pending %s)' %
-                    (old_state.value_nick, new_state.value_nick, pending.value_nick,)
+                logger.debug('STATE_CHANGED: %s %s -> %s (pending %s)' %
+                    (src, old_state.value_nick, new_state.value_nick, pending.value_nick,)
                 )
             elif t == Gst.MessageType.ELEMENT:
                 self._on_message_element(message)
