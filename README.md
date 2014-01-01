@@ -5,7 +5,7 @@ FUNCTIONALITY
 -------------
 
  - [x] add stream contained in media file
- - [ ] use v4l2 source
+ - [x] use v4l2 source
  - [ ] create stream from images (png,jpeg,gif)
  - [ ] create stream from X windows
  - [ ] remove input sources

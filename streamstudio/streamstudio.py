@@ -235,10 +235,8 @@ class StreamStudio(GuiMixin):
     def _start_initial_pipeline(self):
         self._output_pipeline.play()
 
-    def _add_source_pipeline(self, filename):
-        p = pipeline.StreamStudioSource(filename)
-        w = inputs.StreamStudioMonitorInput(p)
-
+    def _add_source_from_pipeline(self, pipeline):
+        w = inputs.StreamStudioMonitorInput(pipeline)
         def __cb_on_show(ssmo):
             # here we don't need Gdk.threads_enter()/leave()
             # since it's called from the right thread
@@ -246,18 +244,18 @@ class StreamStudio(GuiMixin):
 
         def __cb_on_video_stream_activated(monitorinput, stream_id):
             logger.info('selected stream %d from %s' %
-                (stream_id, p,)
+                (stream_id, pipeline,)
             )
             if self._gui_video_selected is not None:
                 self._gui_video_selected.deselect_video()
 
 
             self._gui_video_selected = monitorinput
-            self._pipeline_video_selected = p
+            self._pipeline_video_selected = pipeline
 
             # enable the video src that when ready will emit
             # the 'sink-ready' signal
-            self._switch_controller.swap_source(p)
+            self._switch_controller.swap_source(pipeline)
 
         w._get_main_class().connect('show', __cb_on_show)
         w.connect('video-stream-selected', __cb_on_video_stream_activated)
@@ -266,36 +264,17 @@ class StreamStudio(GuiMixin):
 
         self._gui_inputs.append(w)
 
-        p.play()
+        pipeline.play()
+
+    def _add_file_pipeline(self, filename):
+        p = pipeline.StreamStudioSource(filename)
+
+        self._add_source_from_pipeline(p)
+
 
     def _add_device_source_pipeline(self, filename):
         p = pipeline.V4L2StreamStudioSource(filename)
-        w = inputs.StreamStudioMonitorInput(p)
-
-        def __cb_on_activated(ssmo):
-            Gdk.threads_enter()
-            w.reparent_in(self.sources_vbox)
-            Gdk.threads_leave()
-
-        def __cb_on_video_stream_activated(monitorinput, stream_id):
-            logger.info('selected stream %d from %s' %
-                (stream_id, p,)
-            )
-            if self._gui_video_selected is not None:
-                self._gui_video_selected.deselect_video()
-
-            self._gui_video_selected = monitorinput
-
-            self._switch_controller.swap_source(p.get_video_src())
-
-        w.connect('initializated', __cb_on_activated)
-        w.connect('video-stream-selected', __cb_on_video_stream_activated)
-
-        w.show_all()
-
-        self._gui_inputs.append(w)
-
-        p.play()
+        self._add_source_from_pipeline(p)
 
     def _on_action_add_new_video_source(self, action):
         self.add_video_source()
@@ -319,7 +298,7 @@ class StreamStudio(GuiMixin):
         self.quit()
 
     def _on_video_source_file_selection(self, filename):
-        self._add_source_pipeline(filename)
+        self._add_file_pipeline(filename)
 
     def _on_video_source_device_selection(self, filename):
         """
