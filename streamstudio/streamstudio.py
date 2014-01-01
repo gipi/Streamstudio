@@ -14,6 +14,7 @@ streaming thread can negatively affect real-time performance and should be avoid
 
 from . import inputs
 import sys
+import os
 from .sslog import logger
 from .gui import GuiMixin
 
@@ -276,6 +277,10 @@ class StreamStudio(GuiMixin):
         p = pipeline.V4L2StreamStudioSource(filename)
         self._add_source_from_pipeline(p)
 
+    def _add_image_source_pipeline(self, filename):
+        p = pipeline.ImageStreamStudioSource(filename)
+        self._add_source_from_pipeline(p)
+
     def _on_action_add_new_video_source(self, action):
         self.add_video_source()
     
@@ -284,6 +289,9 @@ class StreamStudio(GuiMixin):
 
     def _on_action_open(self, action):
         self.open()
+
+    def _on_image_open(self, action):
+        self.open_image_selector()
 
     def _on_action_save(self, action):
         self.save()
@@ -306,6 +314,9 @@ class StreamStudio(GuiMixin):
         create the proper pipeline and pass it to self._control_pipeline. 
         """
         self._add_device_source_pipeline(filename)
+
+    def _on_image_source_selection(self, filename):
+        self._add_image_source_pipeline(filename)
 
     def _alert_message(self, message):
         self.statusbar.push(self._menu_cix,message)
@@ -351,6 +362,16 @@ class StreamStudio(GuiMixin):
             '/dev',
             self._on_video_source_device_selection)
 
+    def open_image_selector(self):
+        self._open_dialog(
+            'Seleziona immagine',
+            (
+                ('PNG', '*.png',),
+                ('JPEG', '*.jpg',),
+            ),
+            os.path.expanduser('~'),
+            self._on_image_source_selection)
+
     def new_gs_pipeline(self):
         """Opens a dialog window to insert your own gstreamer pipeline"""
         label = Gtk.Label("Insert your already tested gstreamer pipeline:")
@@ -372,7 +393,6 @@ class StreamStudio(GuiMixin):
                 dialog.destroy()
  
     def open(self):
-        import os
         self._open_dialog(
             'Choose a file to open',
             [

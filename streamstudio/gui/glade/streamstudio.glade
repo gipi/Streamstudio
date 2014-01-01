@@ -44,11 +44,12 @@
                     </child>
                     <child>
                       <object class="GtkImageMenuItem" id="imagemenuitem3">
-                        <property name="label">gtk-save</property>
+                        <property name="label">Usa immagine</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="use_underline">True</property>
-                        <property name="use_stock">True</property>
+                        <property name="image">image1</property>
+                        <property name="use_stock">False</property>
+                        <signal name="activate" handler="_on_image_open" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -189,7 +190,6 @@
               <object class="GtkHBox" id="box3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="homogeneous">False</property>
                 <child>
                   <object class="GtkFrame" id="frame1">
                     <property name="visible">True</property>
