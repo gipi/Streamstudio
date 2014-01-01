@@ -40,7 +40,7 @@ class VideoInput(GObject.GObject, GuiMixin):
 
     def __init__(self):
         GObject.GObject.__init__(self)
-        self._build_gui()
+        self._build_gui('videoinput', 'locale')
 
         self.da = self._get_ui_element_by_name('vi_drawingarea')
         self._main_container = self._get_ui_element_by_name('vi_main_container')

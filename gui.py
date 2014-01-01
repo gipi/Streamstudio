@@ -2,6 +2,9 @@
 """
 from gi.repository import Gtk, Gdk
 from sslog import logger
+import locale, gettext
+
+
 class GuiMixin(object):
     """Mixin to be used to manage easily GUI.
 
@@ -17,12 +20,28 @@ class GuiMixin(object):
     main_container_class = None
     drawing_area_class = None
 
-    def _build_gui(self):
+    def _init_localization(self, app_name, locale_dir):
+        # localization code inspired from this stackoverflow answer
+        #  http://stackoverflow.com/questions/13395433/pygtkgladelocalization
+        locale.setlocale(locale.LC_ALL, '')
+        locale.bindtextdomain(app_name, locale_dir)
+        gettext.bindtextdomain(app_name, locale_dir)
+        gettext.textdomain(app_name)
+        self._ = gettext.gettext
+
+    def _build_gui(self, translation_domain=None, locale_dir=None):
         glade_file = '%s.glade' % self.__class__.__name__.lower() if not self.glade_file_path else self.glade_file_path
 
         print glade_file
 
+        if translation_domain is not None and locale_dir is not None:
+            self._init_localization(translation_domain, locale_dir)
+
         builder = Gtk.Builder()
+
+        if translation_domain is not None:
+            builder.set_translation_domain(translation_domain)
+
         builder.add_from_file(glade_file)
         builder.connect_signals(self)
 

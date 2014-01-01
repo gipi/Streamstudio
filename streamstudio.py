@@ -190,7 +190,7 @@ class SourceController(GObject.GObject):
 class StreamStudio(GuiMixin):
     main_class = 'ssWindow'
     def __init__(self):
-        self._build_gui()
+        self._build_gui('streamstudio', 'locale')
         self._main_monitor_container = self._get_ui_element_by_name('frame1')
         self.sources_vbox = self._get_ui_element_by_name('sources_container')
 

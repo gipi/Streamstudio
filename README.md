@@ -15,6 +15,7 @@ FUNCTIONALITY
  - [x] visualize input audio volume
  - [x] modify input audio volume
  - [ ] save locally input and output
+ - [~] localization
 
 Quick start:
 
@@ -100,3 +101,13 @@ The project is hosted at
 
  # apt-get install v4l2loopback-dkms v4l2loopback-utils
 
+LOCALIZATION
+------------
+
+Steps to create localization files:
+
+    $ export LOCALIZE_FILE=X
+    $ intltool-extract --type=gettext/glade $LOCALIZE_FILE.glade
+    $ xgettext --language=Python --keyword=_ --keyword=N_ --output=$LOCALIZE_FILE.pot $LOCALIZE_FILE.py $LOCALIZE_FILE.glade.h
+    $ msginit --locale=it_IT --input=$LOCALIZE_FILE.pot
+    $ msgfmt it_IT.po -o locale/it_IT/LC_MESSAGES/LOCALIZE_FILE.mo
