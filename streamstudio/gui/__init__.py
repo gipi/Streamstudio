@@ -2,6 +2,9 @@
 """
 from gi.repository import Gtk, Gdk
 from sslog import logger
+import os
+
+
 class GuiMixin(object):
     """Mixin to be used to manage easily GUI.
 
@@ -20,10 +23,10 @@ class GuiMixin(object):
     def _build_gui(self):
         glade_file = '%s.glade' % self.__class__.__name__.lower() if not self.glade_file_path else self.glade_file_path
 
-        print glade_file
+        logger.debug('using \'%s\' as interface XML file' % glade_file)
 
         builder = Gtk.Builder()
-        builder.add_from_file(glade_file)
+        builder.add_from_file(os.path.join(os.path.dirname(__file__), 'glade', glade_file))
         builder.connect_signals(self)
 
         assert builder != None
