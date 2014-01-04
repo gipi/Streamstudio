@@ -445,15 +445,14 @@ class StreamStudio(GuiMixin):
             fs.destroy()
 
     def about(self):
-        dialog = Gtk.MessageDialog(self,
-            (Gtk.DIALOG_MODAL |
-            Gtk.DIALOG_DESTROY_WITH_PARENT),
-            Gtk.MESSAGE_INFO,
-            Gtk.BUTTONS_OK,
-            "We are trying to build a studio for lots of video/audio input who generate a virtual webcam as output"
+        ad = Gtk.AboutDialog()
+        ad.set_authors(
+            ['Gianluca Pacchiella', 'Pier Paolo Pittavino',]
         )
-        dialog.run()
-        dialog.destroy()
+        ad.set_license('GPLv3')
+        ad.set_program_name('StreamStudio')
+
+        ad.run()
 
     def quit(self):
         self._output_pipeline.kill()
