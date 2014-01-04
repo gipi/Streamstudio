@@ -7,14 +7,18 @@ FUNCTIONALITY
  - [x] add stream contained in media file
  - [ ] use v4l2 source
  - [ ] create stream from images (png,jpeg,gif)
+ - [ ] create stream from X windows
  - [ ] remove input sources
  - [ ] add pause/play for not live sources
+ - [ ] use time format in the seek bar
+ - [ ] use different gui for live and not live sources
  - [x] switch between video sources
  - [ ] switch between audio sources
  - [x] visualize input audio level
  - [x] visualize input audio volume
  - [x] modify input audio volume
  - [ ] save locally input and output
+ - [ ] headless mode (screencast maybe)
 
 Quick start:
 
@@ -99,4 +103,3 @@ The project is hosted at
 
 
  # apt-get install v4l2loopback-dkms v4l2loopback-utils
-
