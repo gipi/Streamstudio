@@ -1,6 +1,6 @@
 from gi.repository import Gst
 import sys
-from sslog import logger
+from .sslog import logger
 
 def _ctrl_c_handling(pipeline):
     """

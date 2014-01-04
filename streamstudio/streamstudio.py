@@ -12,16 +12,16 @@ buffers are dropped when the maximum queue size is reached. Note that blocking t
 streaming thread can negatively affect real-time performance and should be avoided.
 '''
 
-import inputs
+from . import inputs
 import sys
-from sslog import logger
-from gui import GuiMixin
+from .sslog import logger
+from .gui import GuiMixin
 
 from gi.repository import Gtk, GObject, Gdk, Gst
-import pipeline
+from . import pipeline
 # lock use inspired from this <https://github.com/kivy/kivy/blob/31ba89c6c7661dcc6fa6916b46be8a0381874e5c/kivy/core/video/video_gstreamer.py>
 from threading import Lock
-from conf import Configuration
+from .conf import Configuration
 
 print 'Gtk %d.%d.%d' % (
     Gtk.get_major_version(),

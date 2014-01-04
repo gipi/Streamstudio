@@ -1,9 +1,9 @@
-from sslog import logger
+from .sslog import logger
 # GstVideo and GdkX11 are necessary to avoid these bugs
 # <https://bugzilla.gnome.org/show_bug.cgi?id=673396>
 from gi.repository import Gtk, GObject, Gdk, Gst, GstVideo, GdkX11
-from pipeline import BasePipeline, StreamStudioSource, StreamStudioOutput
-from gui import GuiMixin
+from .pipeline import BasePipeline, StreamStudioSource, StreamStudioOutput
+from .gui import GuiMixin
 
 
 

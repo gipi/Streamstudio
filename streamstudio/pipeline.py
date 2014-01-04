@@ -3,10 +3,10 @@
 Main classes to manage gstreamer pipelines construction.
 """
 import os
-from sslog import logger
-from utils import flatten
+from .sslog import logger
+from .utils import flatten
 from gi.repository import Gst, GObject
-from conf import Configuration
+from .conf import Configuration
 
 print 'GObject v%s' % GObject._version
 print 'PyGObject v%s' % (

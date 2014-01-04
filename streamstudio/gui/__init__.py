@@ -1,7 +1,7 @@
 """Simple class to inizialize its own GUI loading it by a glade file.
 """
 from gi.repository import Gtk, Gdk
-from sslog import logger
+from ..sslog import logger
 import os
 
 
