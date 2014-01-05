@@ -12,13 +12,6 @@ class VideoInput(GObject.GObject, GuiMixin):
     for a gstreamer video pipeline who could be imported in other windows 
     using reparenting:
 
-    import inputs
-    (...)
-    viewer = inputs.VideoInput() 
-    childWidget = viewer.main_vbox
-    childWidget.reparent(self.main_vbox)
-    childWidget.show_all()
-
     This is intended to be used as a simple view (think to the MVC paradigm) and made
     available some signals
     '''	
