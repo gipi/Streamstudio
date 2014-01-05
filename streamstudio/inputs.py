@@ -1,9 +1,9 @@
-from sslog import logger
+from .sslog import logger
 # GstVideo and GdkX11 are necessary to avoid these bugs
 # <https://bugzilla.gnome.org/show_bug.cgi?id=673396>
 from gi.repository import Gtk, GObject, Gdk, Gst, GstVideo, GdkX11
-from pipeline import BasePipeline, StreamStudioSource, StreamStudioOutput
-from gui import GuiMixin
+from .pipeline import BasePipeline, StreamStudioSource, StreamStudioOutput
+from .gui import GuiMixin
 
 
 
@@ -11,13 +11,6 @@ class VideoInput(GObject.GObject, GuiMixin):
     '''This class create a viewers with its own toolbar and its own gtk.Window
     for a gstreamer video pipeline who could be imported in other windows 
     using reparenting:
-
-    import inputs
-    (...)
-    viewer = inputs.VideoInput() 
-    childWidget = viewer.main_vbox
-    childWidget.reparent(self.main_vbox)
-    childWidget.show_all()
 
     This is intended to be used as a simple view (think to the MVC paradigm) and made
     available some signals

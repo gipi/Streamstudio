@@ -20,11 +20,14 @@ FUNCTIONALITY
  - [ ] save locally input and output
  - [ ] headless mode (screencast maybe)
 
-Quick start:
+Quick start (with a virtualenv):
 
     $ git clone https://github.com/gipi/Streamstudio.git
     $ cd Streamstudio
-    $ python streamstudio.py
+    $ virtualenv --system-site-packages env # --system-wide-packages otherwise gobject-introspection doesn't work
+    $ source env/bin/activate
+    $ python setup.py develop
+    $ streamstudio
 
 Below a screenshot of the main GUI
 
