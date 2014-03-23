@@ -459,8 +459,6 @@ class StreamStudioSource(PadPipeline):
         self._video_app_sink.set_property('max-buffers', 2)
         self._video_app_sink.set_property('drop', True)
 
-        self._video_valve = Gst.ElementFactory.make('valve', None)
-
         return [
             self._video_tee, [
                 [
@@ -476,7 +474,6 @@ class StreamStudioSource(PadPipeline):
                     Gst.ElementFactory.make('videorate', None),
                     Gst.ElementFactory.make('videoconvert', None),
                     filtr_sink,
-                    self._video_valve,
                     self._video_app_sink,
                 ],
             ]
