@@ -368,6 +368,7 @@ class StreamStudio(GuiMixin):
             (
                 ('PNG', '*.png',),
                 ('JPEG', '*.jpg',),
+                ('GIF', '*.gif',),
             ),
             os.path.expanduser('~'),
             self._on_image_source_selection)

@@ -519,13 +519,34 @@ class RemoteStreamStudioSource(StreamStudioSource):
         return 'souphttpsrc location=%s ! decodebin name=demux' % self._location
 
 class ImageStreamStudioSource(StreamStudioSource):
+    """Manage pipeline created from an image file."""
+    # maybe for the GIF format we need to loop
+    def __init__(self, location):
+        self._is_gif = location.endswith('gif')
+        super(ImageStreamStudioSource, self).__init__(location)
+
     def _get_video_branch(self):
-        """Prepend a 'imagefreeze' element"""
+        """Prepend a 'imagefreeze' and a videoconvert elements."""
         elements = super(ImageStreamStudioSource, self)._get_video_branch()
 
-        elements.insert(0, Gst.ElementFactory.make('imagefreeze', None))
+        # videoconvert seems to be necessary for the PNG format
+        elements.insert(0, Gst.ElementFactory.make('videoconvert', None))
+
+        if not self._is_gif:
+            elements.insert(0, Gst.ElementFactory.make('imagefreeze', None))
 
         return elements
+
+    def _on_message_eos(self):
+        """If is a GIF then rewind"""
+        if not self._is_gif:
+            super(ImageStreamStudioSource, self)._on_message_eos()
+        else:
+            logger.debug('gif rewinding')
+            self.player.seek_simple(
+                Gst.Format.TIME,
+                Gst.SeekFlags.FLUSH,
+                0)
 
 class StreamStudioOutput(BasePipeline):
     """Pipeline used to finally produce the streaming needed."""
