@@ -89,6 +89,9 @@ class BasePipeline(GObject.GObject):
         message_name = message.get_structure().get_name()
         src = message.src
 
+    def _on_message_eos(self):
+        self.player.set_state(Gst.State.NULL)
+
     def _on_message_prepare_window_handle(self, message):
         imagesink = message.src
         self.emit("set-sink", imagesink)
@@ -124,7 +127,7 @@ class BasePipeline(GObject.GObject):
 
             if t == Gst.MessageType.EOS:
                 logger.info('EOS for %s' % (src,))
-                self.player.set_state(Gst.State.NULL)
+                self._on_message_eos()
             elif t == Gst.MessageType.WARNING:
                 logger.debug('WARNING for %s: %s' % (src, message.parse_warning(),))
             elif t == Gst.MessageType.QOS:
