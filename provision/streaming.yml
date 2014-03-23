@@ -1,0 +1,35 @@
+---
+- hosts: default
+  user: vagrant
+  sudo: True
+
+
+  tasks:
+
+    - name: install basic python
+      shell: apt-get install python-apt
+
+    - name: install packages
+      apt: pkg={{ item }} state=latest
+      sudo: yes
+      with_items:
+        - python
+        - icecast2
+        - liquidsoap
+        - liquidsoap-plugin-all
+
+    - action: shell whoami
+      register: whoami
+
+    - name: update apt cache
+      apt: update_cache=yes cache_valid_time=3600
+      sudo: yes
+
+    - name: update icecast configuration
+      action: copy src=icecast.xml dest=/etc/icecast2/icecast.xml
+      notify:
+        - restart icecast
+    - name: create liquidsoap channel
+      action: copy src=video.liq dest=/etc/liquidsoap/video.liq
+      notify:
+        - restart liquidsoap

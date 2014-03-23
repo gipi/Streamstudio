@@ -64,15 +64,19 @@ github repository present at the address
 
     https://github.com/gipi/gstreamer-repo.git
 
-It's also possible to use a Vagrant box with an Ubuntu 13.04 installation
-with a simple
 
-  $ vagrant up
+STREAMING
+---------
 
-The first time it starts will configure the box installing the desktop environment
-and the gstreamer tools, so be aware that it will download a lot of data from
-the network, just in case you care. Also you need to reboot the first time since the
-window manager is not autostarting.
+A virtualbox machine is configured to be run with icecast and liquidsoap, it's simple as
+
+    $ vagrant up
+
+The first time is run an error pops out since it uses ``ansible`` that needs ``python`` installed:
+you can simply do
+
+    $ vagrant ssh -c 'sudo apt-get install python-apt'
+    $ vagrant provision
 
 
 TESTS
