@@ -16,7 +16,7 @@ SCRIPT
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "streamstudio"
-  config.vm.box_url = "http://goo.gl/y79mW"
+  config.vm.box_url = "https://dl.dropboxusercontent.com/s/xymcvez85i29lym/vagrant-debian-wheezy64.box"
 
   config.vm.provision :shell, :inline => $script
 
