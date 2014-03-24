@@ -75,6 +75,7 @@ A virtualbox machine is configured to be run with icecast and liquidsoap, it's s
 The first time is run an error pops out since it uses ``ansible`` that needs ``python`` installed:
 you can simply do
 
+    $ vagrant ssh -c 'sudo apt-get update'
     $ vagrant ssh -c 'sudo apt-get install python-apt'
     $ vagrant provision
 
