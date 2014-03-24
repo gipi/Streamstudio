@@ -1,0 +1,11 @@
+#!/bin/sh
+# We test if the file is a socket, readable and writable.
+SOCKET_PATH=/var/run/liquidsoap/liquid.sock
+
+if [ -S ${SOCKET_PATH} ] && [ -w ${SOCKET_PATH} ] && \
+   [ -r ${SOCKET_PATH} ]; then
+  socat ${SOCKET_PATH} -
+else
+# If not, we exit..
+  exit 1
+fi

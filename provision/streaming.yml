@@ -35,8 +35,11 @@
       notify:
         - restart liquidsoap
 
+    - name: rule to shell
+      action: copy src=main.liq dest=/etc/liquidsoap/main.liq
+
     - name: create shell script
-      action: copy src=shelliq dest=/usr/bin/shelliq
+      action: copy src=shelliq dest=/usr/bin/shelliq mode=755
 
   handlers:
     - name: restart icecast2
