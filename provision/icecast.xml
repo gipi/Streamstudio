@@ -53,7 +53,7 @@
     <!-- You may have multiple <listener> elements -->
     <listen-socket>
         <port>8000</port>
-        <bind-address>192.168.33.10</bind-address>
+        <bind-address>0.0.0.0</bind-address>
         <!-- <shoutcast-mount>/stream</shoutcast-mount> -->
     </listen-socket>
     <!--
@@ -99,12 +99,12 @@
         <intro>/example_intro.ogg</intro>
         <hidden>1</hidden>
         <no-yp>1</no-yp>
-        <authentication type="htpasswd">
+        <!--authentication type="htpasswd">
                 <option name="filename" value="myauth"/>
                 <option name="allow_duplicate_users" value="0"/>
         </authentication>
         <on-connect>/home/icecast/bin/stream-start</on-connect>
-        <on-disconnect>/home/icecast/bin/stream-stop</on-disconnect>
+        <on-disconnect>/home/icecast/bin/stream-stop</on-disconnect-->
     </mount>
 
     <!-- Only define a <mount> section if you want to use advanced options,
