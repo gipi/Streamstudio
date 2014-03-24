@@ -28,8 +28,16 @@
     - name: update icecast configuration
       action: copy src=icecast.xml dest=/etc/icecast2/icecast.xml
       notify:
-        - restart icecast
+        - restart icecast2
+
     - name: create liquidsoap channel
       action: copy src=video.liq dest=/etc/liquidsoap/video.liq
       notify:
         - restart liquidsoap
+
+  handlers:
+    - name: restart icecast2
+      service: name=icecast2 state=restarted
+
+    - name: restart liquidsoap
+      service: name=liquidsoap state=restarted
